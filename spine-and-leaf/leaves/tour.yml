@@ -1,0 +1,163 @@
+# tour.yml — Crucible: guided value tour (open-core + suites)
+#
+# spine_version: 0.4 — additive on top of the 0.3 assurance-pivot tour. Keeps
+# the decision-moment story (the release gate, the model-swap regression,
+# vetting an agent you did not build) and adds two things v0.4 makes true of
+# the product: SUITES as the pick-and-choose contribution unit for your agent
+# type (C11), and the OPEN-CORE promise that only the free, LLM-free core ever
+# computes the verdict — an optional managed tier adds history/trends/fleet
+# view and never touches the verdict (C12). C12 is framed here as a TRUST
+# feature, not an upsell: the reason you can believe the number is that the
+# code computing it is the same code you can run yourself.
+#
+# Audience: unchanged from 0.3 — the builder who just wired up an
+# agentic-commerce / A2A / MCP agent and feels the risk in their gut, plus
+# procurement/registry staff about to vet a THIRD-PARTY agent. Buyer's
+# language throughout, not a researcher's. The open-core promise also speaks
+# directly to that second audience: they need to trust a verdict on an agent
+# they don't own, which is exactly what "the cloud can never fudge it" buys.
+#
+# status convention (matches sequencing.yml): `built` = the anchor is real
+# code you can run today; `in_progress` = being built this iteration, real
+# but not yet complete; `not_started` = roadmap, described honestly per the
+# Spine's "shape of the answer, not the spec" — command syntax shown (e.g.
+# `--trials`, `--suites`, `crucible diff`) does not exist in crucible/cli.py
+# yet. Never mark a not_started or in_progress step `built`; that would
+# misrepresent shipped state. This pass promotes C7 (the-ghost,
+# the-sprung-trace) from not_started to in_progress: the N-trials
+# fail-closed runner is being built now, not merely planned.
+
+tour:
+  id: crucible-value-tour
+  title: "You tried the trap once by hand and it held. Was that safety, or luck? Find out on your laptop, before it ships — or before you trust someone else's agent."
+  audience: >
+    The builder at a release / model-swap gate, and the party vetting a
+    third-party agent they do not own and cannot unit-test.
+
+  steps:
+    - id: the-ghost
+      anchor: "hero.headline"
+      headline: "Your agent is stochastic. A trap that held on your desk can leak on the tenth customer, and you can never reproduce the ghost."
+      body: >
+        Conformance kits check that your agent SPEAKS the protocol. Observability
+        tells you what broke AFTER the damage. One manual try tells you nothing —
+        it's a coin flip you're mistaking for an answer. Crucible's job is to stop
+        trusting a single try.
+      spine_commitment: C7
+      status: in_progress
+      # C7 (fail-closed N-trials runner + prevalence) is being built this
+      # iteration. Today's gate is fail-closed on a single trial only.
+
+    - id: one-command-verdict
+      anchor: "terminal.$ crucible run --endpoint https://my-agent.example/a2a"
+      headline: "Clone it, point it at your agent, run one line. First pass/fail on a laptop, no account, no cloud."
+      body: >
+        No platform to join and no compute budget to request. The trap floor is
+        scripted, not an LLM, so it costs nothing to run and reproduces
+        byte-for-byte from its seed — this part is real today.
+      spine_commitment: C1
+      status: built
+
+    - id: pick-your-suites
+      anchor: "terminal.$ crucible run --endpoint https://my-agent.example/a2a --suites payments,identity --trials 20"
+      headline: "Pick the suites that match what your agent actually does — payments, customer-service, browsing — and stress it against corpuses that mimic real situations, not a generic quiz."
+      body: >
+        A suite is a curated scenario corpus built from one-file villains (C6),
+        discovered not registered, with named credit for whoever contributed it.
+        Every scenario in every suite still maps to the frozen eight tripwires
+        (C4) — suites are the growth surface, the eight verdicts are the fixed
+        taxonomy. A new agent type earns new suites; it never earns a new
+        verdict type — a new tripwire is an explicit v2 decision, never silent
+        drift. A curated index catalogs the suites on offer: an index of
+        attacks, not of agents.
+      spine_commitment: C11
+      status: not_started
+      # The one-file villain atom exists and is shipped (C6); the suite unit
+      # itself — the SDK, --suites selection, and seed suites (payments,
+      # customer-service, browsing) — has not been built yet.
+
+    - id: the-sprung-trace
+      anchor: "report.line: [SPRUNG] money_leak   sprang in 3 of 20 trials → worst-case trace"
+      headline: "Sample your agent N times and stay fail-closed: one leak in twenty is still a red line, not a rounding error."
+      body: >
+        SPRUNG the moment it leaks in ANY trial, HELD only if it holds in all of
+        them. Prevalence ("3 of 20") ships as evidence for that binary verdict —
+        never a score — and the worst-case trace replays byte-for-byte to the
+        exact decision that leaked.
+      spine_commitment: C7
+      status: in_progress
+      # Single-trial SPRUNG + replayable trace exist today; the N-trials
+      # prevalence line and fail-closed-over-N verdict are being built now.
+
+    - id: model-swap-regression
+      anchor: "terminal.$ crucible diff bundles/2026-08-01.bundle bundles/2026-08-22.bundle"
+      headline: "Your model changed under you overnight. Diff two bundles and see exactly what regressed."
+      body: >
+        Run the gauntlet before and after a model swap or a release, keep the
+        bundle from each, and diff them — a tripwire that held last week and
+        springs today is a regression caught in the lab, with a trace, not a
+        customer's money in the wild.
+      spine_commitment: C9
+      status: not_started
+      # The reproducible assurance bundle and bundle diff are roadmap.
+
+    - id: vet-a-stranger
+      anchor: "terminal.$ crucible run --endpoint https://vendor-agent.example/a2a --suites payments --trials 20"
+      headline: "You don't own that agent. Point Crucible at it over the wire and get a verdict anyway."
+      body: >
+        Procurement wiring in a third-party agent, or a registry certifying one on
+        publish, can't read its source — they can only probe it from the outside.
+        The same trap floor, aimed through the suites that match what the vendor's
+        agent claims to do, reaches a live A2A/MCP endpoint and hands back a
+        verdict and a trace with no code access required.
+      spine_commitment: C10
+      status: not_started
+      # The A2A/MCP wire and cassette classification exist (C5, shipped);
+      # the N-trials external-vetting workflow this step describes does not.
+
+    - id: the-bundle-for-an-auditor
+      anchor: "file: traces/2026-08-22-vendor-agent.bundle"
+      headline: "Hand an auditor one file: the verdict, the worst-case trace, and exactly what was tested."
+      body: >
+        The assurance bundle carries the fail-closed verdict, the replayable
+        worst-case trace, and an environment fingerprint — model, model-version,
+        prompt hash, tool set, date — so a risk committee gets re-runnable proof
+        of what was tested, not a screenshot of a dashboard.
+      spine_commitment: C9
+      status: not_started
+
+    - id: the-open-core-promise
+      anchor: "cli.$ crucible run  →  computes the verdict.   cloud.optional  →  profile + trends, never the verdict."
+      headline: "The free core is the only thing that ever judges your agent — that's not a limitation, it's why you can believe the number."
+      body: >
+        The OSS is LLM-free and compute-free and computes the pass/fail verdict
+        deterministically, offline, reproducibly (C2) — there is no server in
+        the loop that could quietly change it. An optional managed tier is pure
+        value-add on top of that: a hosted profile per agent and longitudinal
+        analytics — did safety regress across model versions, across your whole
+        fleet — and it is architecturally incapable of touching the verdict.
+        Three bright lines keep it neutral: the verdict is always reproducible
+        against the free core, so you can audit the cloud against the code; it
+        is never for sale and never withheld; and your private failure data is
+        never cross-leaked or turned into a public ranking. That's the pitch to
+        the procurement buyer above as much as the builder: you don't have to
+        trust us, you have to trust arithmetic you can run yourself.
+      spine_commitment: C12
+      status: not_started
+      # C12 is entirely future: the managed tier (hosted profile, longitudinal
+      # analytics, fleet view, audit/compliance packaging) does not exist yet.
+      # The property it promises — only the OSS computes the verdict — is
+      # already true today by construction (C2), which is what makes the
+      # future promise credible rather than a claim to take on faith.
+
+    - id: the-refusal
+      anchor: "repo.villains/ — one file, discovered not registered"
+      headline: "Free, local, no account, no score — and it will never grade your agent."
+      body: >
+        No hosted platform, no leaderboard, no namespace to claim. The gate
+        answers pass or fail with a trace, never advice and never a quality
+        score: a fitness gate, not a debugger, and not a judge of how you built
+        your agent. Suites grow the coverage; the eight verdicts never grow into
+        a score; the optional cloud never grows into the judge.
+      spine_commitment: C3
+      status: built

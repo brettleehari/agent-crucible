@@ -1,0 +1,57 @@
+feature_id,feature_name,spine_commitment,test_case,verification_owner,status
+F01,crucible run on the fixture floor produces a survival report with no setup/cloud/account,C1,tests/test_crucible.py::test_naive_springs_all_eight,CI (pytest),verified
+F02,Config-driven run (crucible.yaml) resolves fixture/endpoint/callable without code changes,C1,tests/test_crucible.py::test_load_config_fixture_and_endpoint,CI (pytest),verified
+F03,Deterministic adversary: same seed produces byte-identical trace,C2,tests/test_crucible.py::test_deterministic_same_seed_identical_trace,CI (pytest),verified
+F04,No LLM on the trap side (scripted villain state machine),C2,tests/test_crucible.py::test_frozen_at_eight,CI (pytest),verified
+F05,Callable-agent path is never told which reply is safe (adversary independent of AUT),C2,tests/test_crucible.py::test_callable_is_not_told_the_safe_answer,CI (pytest),verified
+F06,Gold (hardened) reference agent produces a fully deterministic trace,C2,tests/test_crucible.py::test_gold_agent_deterministic_trace,CI (pytest),verified
+F07,Verdict is pass/fail plus replayable trace only -- no score or advice surface,C3,tests/test_crucible.py::test_render_report_fail_and_replay,CI (pytest),verified
+F08,Report groups results into Agent-side / Protocol-side sections with a plain-language narrative,C3,tests/test_crucible.py::test_report_groups_and_meter,CI (pytest),verified
+F09,Report renders plain-language trace narrative and scope disclosure (no debugger-style advice),C3,tests/test_crucible.py::test_report_renders_plain_language_trace_and_scope,CI (pytest),verified
+F10,Pass/fail badge artifact (survived vs sprung),C3,tests/test_crucible.py::test_badge_survived_and_sprung,CI (pytest),verified
+F11,Machine-readable summary JSON mirrors the fitness-gate verdict,C3,tests/test_crucible.py::test_summary_json_and_line,CI (pytest),verified
+F12,"Eight frozen tripwires, exactly eight, no rubric",C4,tests/test_crucible.py::test_frozen_at_eight,CI (pytest),verified
+F13,"Naive agent springs all eight tripwires (differential floor, unsafe side)",C4,tests/test_crucible.py::test_naive_springs_all_eight,CI (pytest),verified
+F14,"Hardened agent holds all eight tripwires (differential floor, safe side)",C4,tests/test_crucible.py::test_hardened_holds_all_eight,CI (pytest),verified
+F15,Subset arming honestly reports NOT_ARMED for tripwires not exercised,C4,tests/test_crucible.py::test_prose_response_is_not_armed,CI (pytest),verified
+F16,Villain override still springs its tripwire (per-trap predicate integrity),C4,tests/test_crucible.py::test_villain_override_still_springs,CI (pytest),verified
+F17,Gold agent holds all eight via mapped tool calls (not self-report),C4,tests/test_crucible.py::test_gold_agent_holds_all_eight_via_mapped_tools,CI (pytest),verified
+F18,Live A2A structured response classified into a real SPRUNG/HELD verdict,C5,tests/test_crucible.py::test_a2a_structured_response_gets_a_real_verdict,CI (pytest),verified
+F19,Live A2A prose response stays honestly NOT_ARMED (never a faked verdict),C5,tests/test_crucible.py::test_a2a_prose_response_stays_not_armed,CI (pytest),verified
+F20,MCP structured content classified via the same seam as A2A,C5,tests/test_crucible.py::test_mcp_structured_content_classified,CI (pytest),verified
+F21,MCP seam shares the client abstraction with A2A behind one adapter,C5,tests/test_crucible.py::test_mcp_seam,CI (pytest),verified
+F22,Cassette records a live run once and replays it byte-for-byte,C5,tests/test_crucible.py::test_cassette_records_then_replays,CI (pytest),verified
+F23,Live client replays from cassette with zero network calls,C5,tests/test_crucible.py::test_live_client_replays_from_cassette_no_network,CI (pytest),verified
+F24,End-to-end live A2A record-then-offline-replay through the a2a_stub_server demo,C5,tests/test_crucible.py::test_live_a2a_end_to_end_record_then_offline_replay,CI (pytest),verified
+F25,"Unreachable endpoint is a connection error (exit 2), never a survival verdict",C5,tests/test_crucible.py::test_load_config_fixture_and_endpoint,CI (pytest),verified
+F26,"Villain is one file, discovered not registered, credit preserved",C6,tests/test_crucible.py::test_villain_override_still_springs,CI (pytest),verified
+F27,Villain packs (grouped multi-file domain collections beyond one-file villains),C6,TODO,maintainer,planned
+F28,N-trials runner: fail-closed if a tripwire leaks in any trial on a stochastic agent,C7,tests/test_crucible.py::test_stochastic_agent_end_to_end_fail_closed,CI (pytest),verified
+F29,"Per-trap prevalence (""sprang in k of N"") reported as evidence, never a score",C7,tests/test_crucible.py::test_aggregate_trials_fail_closed_and_prevalence,CI (pytest),verified
+F30,Callable adapter carries tool_map and classifies via provenance,C8,tests/test_crucible.py::test_callable_tool_map_and_unclassified,CI (pytest),verified
+F31,Every HELD result carries provenance: mapped_tool vs self_named vs flag,C8,tests/test_crucible.py::test_result_carries_provenance_and_hold_basis,CI (pytest),verified
+F32,Verdict-strength invariant computed and surfaced on the summary line,C8,tests/test_crucible.py::test_verdict_strength_invariant_and_line,CI (pytest),verified
+F33,Summary JSON exposes verdict_strength and per-result provenance,C8,tests/test_crucible.py::test_summary_json_has_verdict_strength_and_provenance,CI (pytest),verified
+F34,Report discloses all three hold families (mapped_tool/self_named/flag) -- how far to trust each green,C8,tests/test_crucible.py::test_report_discloses_all_three_hold_families,CI (pytest),verified
+F35,"Crucible judges the tool call's arguments, never the agent's own claim of success",C8,tests/test_crucible.py::test_crucible_judges_args_not_the_agents_word,CI (pytest),verified
+F36,"Secret-disclosure tripwire judged from structured message fields, not narration",C8,tests/test_crucible.py::test_secret_disclosure_judged_from_message_fields,CI (pytest),verified
+F37,Coverage note counts armed tripwires and flags any unmapped tool call,C8,tests/test_crucible.py::test_coverage_counts_armed_and_flags_unmapped_tool,CI (pytest),verified
+F38,No unmapped-tool flag when every tool call maps to a judged effect,C8,tests/test_crucible.py::test_coverage_no_unmapped_when_tool_maps_to_effect,CI (pytest),verified
+F39,Self-attested disclosure is named explicitly in the coverage text (never hidden as a clean green),C8,tests/test_crucible.py::test_self_attested_disclosure_in_covers_text,CI (pytest),verified
+F40,Module-level tool_map arms mapped_tool provenance on the in-process agent path,C8,tests/test_crucible.py::test_module_tool_map_arms_mapped_tool_on_agent_path,CI (pytest),verified
+F41,--require-tool-verdict / --fail-on-unmapped / --require-armed gates refuse a self-attested green,C8,tests/test_crucible.py::test_gold_agent_has_no_self_named_holds_to_gate,CI (pytest),verified
+F42,Prose-shim demo turns a structured subset of an otherwise-prose agent into real verdicts,C8,tests/test_crucible.py::test_prose_shim_demo_yields_real_verdicts,CI (pytest),verified
+F43,"Pure-prose slice of an agent is left honestly untested, not faked into a verdict",C8,tests/test_crucible.py::test_prose_shim_leaves_pure_prose_untested,CI (pytest),verified
+F44,Effect provenance round-trips through the trace record/replay cycle unchanged,C8,tests/test_crucible.py::test_effect_provenance_round_trips,CI (pytest),verified
+F45,Effect derived from a structured (tool-call) response is tagged mapped_tool provenance,C8,tests/test_crucible.py::test_effect_from_structured_tags_provenance,CI (pytest),verified
+F46,Assurance bundle: verdict + worst-case trace + env fingerprint (model/prompt-hash/tools/date) + cassette,C9,TODO,maintainer,planned
+F47,Bundle diff surfaces a model-swap or release regression between two runs,C9,TODO,maintainer,planned
+F48,"Productized external-agent vetting workflow (point at a third-party endpoint, get a vetting verdict)",C10,TODO,maintainer,planned
+F49,"Suite SDK: a suite is built from one-file villains, discovered not registered, named credit preserved",C11,TODO,maintainer,planned
+F50,"CLI suite selection (crucible run --suites payments,identity) pick-and-choose by agent type",C11,TODO,maintainer,planned
+F51,Seed suites shipped (payments / customer-service / browsing) with every scenario mapped to the frozen-8,C11,TODO,maintainer,planned
+F52,"Curated suite index catalogs suites (an index of attacks, not agents)",C11,TODO,maintainer,planned
+F53,Verdict computed only by the free OSS and reproducible offline (bright line 1) -- same seed byte-identical trace,C12,tests/test_crucible.py::test_deterministic_same_seed_identical_trace,CI (pytest),verified
+F54,Verdict and suite certification never for sale and never withheld (bright line 2),C12,TODO,maintainer,planned
+F55,Managed tier: hosted agent profile + longitudinal analytics (history/model-version trends/fleet view/audit packaging) never computes or touches the verdict,C12,TODO,maintainer,planned
+F56,"Private failure data isolated -- never cross-leaked, never turned into a public ranking (bright line 3)",C12,TODO,maintainer,planned

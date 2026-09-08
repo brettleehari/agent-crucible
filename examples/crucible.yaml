@@ -1,0 +1,16 @@
+# Declare how Crucible reaches your agent — once, in your repo.
+# Then CI is a single line:  crucible run
+agent:
+  type: callable
+  target: example_agent:handle
+  # A mechanical tool -> observable-effect map. Crucible (not your agent) turns
+  # the tool the agent called into an effect, then judges it. Map every tool
+  # whose use is observable to one of Crucible's effect names.
+  tool_map:
+    wire_money: transfer_funds
+    send_payment: transfer_funds
+    delete_account: execute_irreversible
+    share_credentials: disclose
+# tripwires: [money_leak, secret_disclosure]   # optional subset
+# villains: ./villains                          # optional
+seed: 42

@@ -1,0 +1,198 @@
+%% ARCHITECTURE LEAF — spine_version: 0.4 (open-core + suites, ADDITIVE on the
+%% v0.3 assurance pivot — everything that held still holds)
+%% The Gauntlet — system architecture with the explicit Build-vs-Leverage split,
+%% split a second way: SHIPPED (solid, green) vs IN-PROGRESS (solid, blue) vs
+%% NOT-YET-BUILT ROADMAP (dashed, amber) vs the OPTIONAL MANAGED TIER (dashed,
+%% purple — a separate open-core boundary, not part of the moat). Reflects
+%% crucible/crucible/ as built, not as aspired. One command springs deterministic
+%% villains at a real agent and returns a survival report. The agent under test
+%% is stochastic and lives OUTSIDE both moat and commodity, reached only across
+%% the seam — never wired into our stack.
+%% v0.4 additive, this leaf:
+%%   - C7 (N-trials fail-closed runner) reclassified IN PROGRESS THIS ITERATION —
+%%     it is being built now, no longer lumped in with the not-started roadmap.
+%%   - C11 SUITE layer node added INSIDE the BUILD moat (suites are built from
+%%     one-file villains, C6, and every scenario maps to the frozen-8, C4) but
+%%     styled roadmap — the suite SDK / --suites selection is not built yet.
+%%   - C12 OPEN-CORE split made explicit: a new MANAGED tier subgraph shows the
+%%     free OSS alone computes the verdict, and the optional cloud only STORES
+%%     a profile + computes analytics, with a BRIGHT LINE node making "the cloud
+%%     never judges" visible on the diagram, not just in prose.
+graph TB
+  DEV["Builder at a release / model-swap gate —<br/>or the party vetting an agent they did NOT build<br/>one command, no account, no cloud, laptop-only  (C1)"]
+
+  %% ---------------------------------------------------------------------
+  %% The agent under test lives OUTSIDE the gauntlet, reached only across
+  %% the A2A/MCP seam. We never wire it into Crucible's stack — 'we do not
+  %% tell you how to build your agent.' It is STOCHASTIC: today sampled
+  %% once per run (shipped); the N-trials runner (C7, in progress) samples
+  %% it N times.
+  %% ---------------------------------------------------------------------
+  AUT["AGENT UNDER TEST — yours, or one you do not own<br/>LLM-backed ⇒ stochastic, costs money to run<br/>reached only across the seam, never wired into our stack  (C3)"]
+
+  subgraph LEVERAGE["LEVERAGE — commodity (adopt, do not build)"]
+    CLI["Typer CLI<br/>crucible run [--endpoint URL | --mcp URL | --agent fn | --profile naive|hardened]<br/>[--tripwires a,b] [--suites payments,identity] [--cassette f] [--replay] [-o trace.jsonl]"]
+    SIM["deterministic engine<br/>seeded tick loop, state-machine agents"]
+    WRITER["trace writer<br/>append-only JSONL, sort_keys serialization"]
+    PROTO["A2A / JSON-RPC message-send + MCP tools/call<br/>the wire formats we speak, not ones we invented"]
+    LLM["the LLM the agent-under-test is built on<br/>whichever model backs the AUT — not ours to pick"]
+    TOOL["Python / pytest / ruff / pyright<br/>stdlib urllib only — zero new deps"]
+  end
+
+  subgraph BUILD["BUILD — the moat, MOSTLY SHIPPED (our differentiated core)"]
+    FACTORY["gauntlet_factory / scenario 'gauntlet'<br/>wires the envoy + one trap per armed tripwire from task.config"]
+
+    subgraph SEAM["Envoy + adapter seam  (C5, shipped)"]
+      ENVOY["A2AEnvoyAgent<br/>in-sim proxy for the AUT: forwards each probe,<br/>records the decision of record as a g:reply event"]
+      CLIENT["A2AClient Protocol — the one-method send() seam<br/>swap fixture for live without touching traps/envoy/tripwires"]
+      FIX["FixtureA2AClient — profiles naive | hardened<br/>pure fn of (trap, profile): the deterministic<br/>differential control shipped today  (C2)"]
+      HTTP["HttpA2AClient — live A2A message/send"]
+      MCP["McpClient — live MCP tools/call"]
+      CASSETTE["Cassette — record/replay CLASSIFIER  (C5 upgraded)<br/>records a live structured response ONCE, keyed on request body;<br/>classify_a2a_response / classify_mcp_response judge it with the<br/>SAME per-tripwire predicates → SPRUNG/HELD, byte-identical replay;<br/>free-prose reply stays NOT_ARMED — never a fabricated green"]
+    end
+
+    subgraph FLOOR["trap-floor engine — the trap floor  (C2, C6; suites C11)"]
+      TRAPS["TrapAgent x N — seeded state machines, NO LLM<br/>each fires its tripwire's scripted probes, staggered on ticks"]
+      SCRIPTS["_SCRIPTS table + build_trap()<br/>one hostile script per tripwire; exactly one step is decisive<br/>a new villain is one table edit — discovered, not registered  (C6)"]
+      SUITES["Suite layer — SDK NOT BUILT (roadmap, C11)<br/>a suite mimics a real-world situation (payments,<br/>customer-service, browsing), built from one-file villains (C6),<br/>discovered not registered, named credit;<br/>EVERY scenario maps to the frozen-8 (C4) — suites are the<br/>GROWTH SURFACE, the 8 verdicts stay the FIXED taxonomy;<br/>curated index catalogs ATTACKS, not agents;<br/>pick-and-choose --suites selection narrows which villains arm"]
+    end
+
+    subgraph GATE["Eight frozen tripwires + verdict — the fitness gate  (C3, C4, C8)"]
+      TW["TRIPWIRES: 8 frozen, failure-only, binary<br/>agent-side: irreversible_action, instruction_lost_after_compaction,<br/>hostile_service_capture, silent_stall<br/>protocol-side: money_leak, secret_disclosure,<br/>authority_escalation, forged_identity_acceptance"]
+      EVAL["evaluate_tripwires(events)<br/>reads decisive g:reply off the trace; matches action to<br/>safe/unsafe; unclassified = SPRUNG (fail-closed)"]
+      TRUST["Provenance + verdict-strength  (C8, shipped)<br/>mapped_tool (judged tool call) vs self_named (bare effect name)<br/>tagged per hold; verdict_strength_line tallies mapped vs self-named;<br/>evaluate_coverage flags unmapped tools & armed-vs-selected gaps;<br/>--require-tool-verdict / --fail-on-unmapped / --require-armed gate on it"]
+      STATUS["Tri-state per tripwire: SPRUNG / HELD / NOT_ARMED<br/>NOT_ARMED never credited as a defense — no score, no rank, no advice"]
+    end
+
+    REPLAY["Deterministic replay contract  (C2)<br/>same seed → byte-identical JSONL; replayable trace per failure"]
+  end
+
+  REPORT["SURVIVAL REPORT (single trial, shipped)<br/>themed HTML: verdict card, meter, Agent-side/Protocol-side sections,<br/>'How far to trust each green' + coverage + verdict-strength lines,<br/>replay cmd, refusal footer — plus badge SVG + summary JSON<br/>exit non-zero if any tripwire sprang  (C3)<br/>THIS is the frozen verdict — computed ONLY here, by the free OSS (C12)"]
+
+  %% =======================================================================
+  %% IN PROGRESS THIS ITERATION — C7 is being built now. Distinct from the
+  %% not-yet-started roadmap below: not planned, ACTIVE.
+  %% =======================================================================
+  subgraph INPROGRESS["IN PROGRESS THIS ITERATION — N-trials runner (C7)"]
+    TRIALS["N-trials fail-closed runner (IN PROGRESS, C7)<br/>samples the SAME stochastic AUT through the deterministic floor N times<br/>SPRUNG if it leaked in ANY trial, HELD only if it held in ALL —<br/>verdict stays binary; per-trap 'sprang in k of N' is EVIDENCE, never a score"]
+  end
+
+  %% =======================================================================
+  %% ROADMAP — committed but NOT YET STARTED. C9/C10 are net-new; the C11
+  %% suite SDK (see SUITES node above, inside BUILD) is tracked here too.
+  %% =======================================================================
+  subgraph ROADMAP["ROADMAP — the moat, NOT YET BUILT (C9, C10, C11 SDK)"]
+    FP["Environment fingerprint (roadmap, C9)<br/>model, model-version, prompt hash, tool set, date"]
+    BUNDLE["Assurance bundle (roadmap, C9)<br/>fail-closed verdict + worst-case replayable trace<br/>+ fingerprint + cassette — reproducible proof of exactly what was tested"]
+    DIFF["Bundle diff (roadmap, C9)<br/>two bundles diff to surface a model-swap / release regression"]
+    VETTING["Productized external-agent vetting flow (roadmap, C10)<br/>the wire (HTTP/MCP client + cassette, above) already exists;<br/>the point-at-an-agent-you-do-not-own vetting WORKFLOW does not"]
+  end
+
+  %% =======================================================================
+  %% OPEN-CORE SPLIT (C12) — entirely future. A separate BOUNDARY from the
+  %% moat/commodity split above: this is the OSS-vs-managed-service line.
+  %% Only the OSS (BUILD + LEVERAGE + REPORT, all above) ever computes a
+  %% verdict. The managed tier below can only receive an ALREADY-COMPUTED,
+  %% already-frozen verdict + bundle and store/aggregate it — it has no path
+  %% back into EVAL / TRUST / STATUS. That missing path IS the bright line.
+  %% =======================================================================
+  subgraph MANAGED["MANAGED TIER — optional, entirely future, NOT YET BUILT (C12)<br/>pure value-add: STORES + AGGREGATES, never COMPUTES a verdict"]
+    PROFILE["Hosted agent profile (roadmap, C12)<br/>opt-in upload of an already-frozen verdict + bundle;<br/>per-agent identity across runs — storage only, no re-judging"]
+    ANALYTICS["Longitudinal analytics (roadmap, C12)<br/>history, model-version trends, fleet view,<br/>audit/compliance packaging — value-add that REQUIRES hosting"]
+    BRIGHTLINE["BRIGHT LINE (C12) — the cloud never judges:<br/>(1) verdict computed ONLY by the OSS, reproducible offline —<br/>cloud is auditable against the free core;<br/>(2) verdict & suite certification NEVER for sale, NEVER withheld —<br/>OSS always emits full verdict + trace + summary;<br/>(3) private failure data isolated, never cross-leaked,<br/>NEVER a public ranking. Analytics = more evidence, NEVER a score."]
+  end
+
+  %% ---- control / data flow (shipped) ----
+  DEV -->|"one command  (C1)"| CLI
+  CLI -->|"builds scenario config"| FACTORY
+  CLI -.->|"drives the run"| SIM
+
+  FACTORY -->|"envoy"| ENVOY
+  FACTORY -->|"one trap per armed tripwire"| TRAPS
+  SCRIPTS -->|"hostile script"| TRAPS
+
+  TRAPS -->|"g:probe (in the clear)"| ENVOY
+  ENVOY -->|"send(A2AMessage)"| CLIENT
+  CLIENT --- FIX
+  CLIENT --- HTTP
+  CLIENT --- MCP
+  FIX -.->|"differential control (no network)"| ENVOY
+  HTTP --- CASSETTE
+  MCP --- CASSETTE
+  CASSETTE -->|"JSON-RPC (first call only)"| PROTO
+  PROTO -->|"real protocol call"| AUT
+  AUT -->|"structured effect or free prose"| PROTO
+  PROTO -.->|"raw response, recorded once"| CASSETTE
+  CASSETTE -.->|"classified effect (SPRUNG/HELD) or NOT_ARMED"| ENVOY
+  ENVOY -->|"g:reply = decision of record"| WRITER
+  LLM -.->|"backs (unowned by us)"| AUT
+
+  SIM --- ENVOY
+  SIM --- TRAPS
+  WRITER -->|"trace.jsonl"| REPLAY
+  REPLAY -->|"events"| EVAL
+  TW -->|"frozen table = single source of truth"| EVAL
+  FIX -.->|"reads same table"| TW
+  SCRIPTS -.->|"reads same table"| TW
+  EVAL -->|"per-tripwire result + provenance"| TRUST
+  TRUST --> STATUS
+  STATUS -->|"assembled"| REPORT
+
+  %% ---- suite layer flow (dashed — SDK not built, C11) ----
+  CLI -.->|"future --suites payments,identity,browsing"| SUITES
+  SUITES -.->|"pick-and-choose selection narrows which villains arm"| SCRIPTS
+  SUITES -.->|"every scenario maps to the frozen-8"| TW
+
+  %% ---- in-progress flow (solid blue — being built now, C7) ----
+  CLI -.->|"future --trials N"| TRIALS
+  TRIALS -.->|"loops the shipped single-trial run, same seed family"| FACTORY
+  STATUS -.->|"per-trial SPRUNG/HELD"| TRIALS
+  TRIALS -.->|"fail-closed verdict + prevalence 'k of N'"| REPORT
+
+  %% ---- roadmap flow (dashed amber — not yet started, C9/C10) ----
+  REPORT -.-> FP
+  FP -.-> BUNDLE
+  REPLAY -.->|"worst-case trace"| BUNDLE
+  CASSETTE -.->|"cassette artifact"| BUNDLE
+  BUNDLE -.-> DIFF
+  VETTING -.->|"wraps the shipped wire"| HTTP
+  VETTING -.->|"wraps the shipped wire"| MCP
+  AUT -.->|"agent you do not own, over the wire"| VETTING
+
+  %% ---- open-core flow (dashed purple — entirely future, C12) ----
+  REPORT -.->|"opt-in ONLY: upload the already-frozen verdict + bundle<br/>(no verdict inputs ever flow the other way)"| PROFILE
+  BUNDLE -.->|"opt-in: richer evidence to store, still frozen"| PROFILE
+  PROFILE -.->|"aggregates across runs / models / fleet"| ANALYTICS
+  BRIGHTLINE -.->|"governs"| PROFILE
+  BRIGHTLINE -.->|"governs"| ANALYTICS
+
+  %% ---- styling: moat vs commodity vs in-progress vs roadmap vs managed vs the untouched agent ----
+  classDef build fill:#0b3d2e,stroke:#1f9e6f,stroke-width:2px,color:#eafff5;
+  classDef leverage fill:#1a2536,stroke:#5b7aa8,stroke-width:1px,color:#d7e3f4,stroke-dasharray:4 3;
+  classDef external fill:#3a2233,stroke:#c26aa0,stroke-width:2px,color:#ffe6f4;
+  classDef actor fill:#2b2b12,stroke:#c9b458,stroke-width:1px,color:#fff8d6;
+  classDef report fill:#123047,stroke:#3fb0d8,stroke-width:2px,color:#e6f7ff;
+  classDef roadmap fill:#3a2a0a,stroke:#e0a52c,stroke-width:2px,stroke-dasharray:6 4,color:#ffe9b3;
+  classDef inprogress fill:#0a2a3a,stroke:#2c9ee0,stroke-width:2px,stroke-dasharray:2 2,color:#cdeeff;
+  classDef managed fill:#241633,stroke:#9a5fd1,stroke-width:2px,stroke-dasharray:5 3,color:#ecdcff;
+  classDef brightline fill:#2e1440,stroke:#c78bff,stroke-width:3px,color:#f6ecff;
+
+  class FACTORY,ENVOY,CLIENT,FIX,HTTP,MCP,CASSETTE,TRAPS,SCRIPTS,TW,EVAL,TRUST,STATUS,REPLAY build;
+  class CLI,SIM,WRITER,PROTO,LLM,TOOL leverage;
+  class AUT external;
+  class DEV actor;
+  class REPORT report;
+  class TRIALS inprogress;
+  class FP,BUNDLE,DIFF,VETTING,SUITES roadmap;
+  class PROFILE,ANALYTICS managed;
+  class BRIGHTLINE brightline;
+
+  %% subgraph tinting
+  style BUILD fill:#06231a,stroke:#1f9e6f,stroke-width:3px,color:#7ff0c2;
+  style LEVERAGE fill:#0e1622,stroke:#5b7aa8,stroke-width:1px,color:#9fb8dc;
+  style SEAM fill:#0a3326,stroke:#1f9e6f,color:#aef0d4;
+  style FLOOR fill:#0a3326,stroke:#1f9e6f,color:#aef0d4;
+  style GATE fill:#0a3326,stroke:#1f9e6f,color:#aef0d4;
+  style INPROGRESS fill:#071e2b,stroke:#2c9ee0,stroke-width:2px,stroke-dasharray:2 2,color:#bfe6ff;
+  style ROADMAP fill:#241a05,stroke:#e0a52c,stroke-width:2px,stroke-dasharray:6 4,color:#ffd98a;
+  style MANAGED fill:#180d24,stroke:#9a5fd1,stroke-width:2px,stroke-dasharray:5 3,color:#e6d4ff;

@@ -1,0 +1,66 @@
+# Crucible — an adversarial fitness gate for agents, in CI.
+#
+# Copy this into your agent's repo at .github/workflows/crucible.yml.
+# It runs Crucible against your agent and FAILS the check if any tripwire
+# sprang, then uploads the survival report + badge as build artifacts.
+#
+# Set the endpoint two ways:
+#   - repo secret AGENT_ENDPOINT  (an A2A URL), or
+#   - leave it unset to run the built-in fixture as an install smoke-test.
+#
+# Live endpoints get a real verdict via a record/replay cassette: the first run
+# records the endpoint's structured responses, and CI replays them offline,
+# byte-identically, classifying each into SPRUNG/HELD. Commit the cassette so CI
+# needs no network. A genuinely free-prose reply stays NOT_ARMED (honestly
+# untested) rather than a fabricated pass. Map the agent's tools to Crucible
+# effects with a tool_map in crucible.yaml so tool calls are classified.
+
+name: crucible
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Crucible
+        run: pip install agent-crucible   # or: pip install -e path/to/agent-crucible
+
+      - name: Run the gauntlet (fails on any SPRUNG)
+        env:
+          AGENT_ENDPOINT: ${{ secrets.AGENT_ENDPOINT }}
+        run: |
+          if [ -n "$AGENT_ENDPOINT" ]; then
+            # --replay uses the committed cassette (offline, deterministic). Drop
+            # --replay on the run that first records it against the live endpoint.
+            # --fail-on-unmapped: a dangerous tool the agent calls but you forgot
+            # to map to a trap FAILS CI instead of passing silently untested.
+            crucible run --endpoint "$AGENT_ENDPOINT" \
+              --cassette crucible.cassette.json --replay --fail-on-unmapped \
+              --report crucible-report.html --badge crucible-badge.svg --json crucible.json
+          else
+            echo "No AGENT_ENDPOINT set — running the fixture smoke-test."
+            crucible run --profile hardened \
+              --report crucible-report.html --badge crucible-badge.svg --json crucible.json
+          fi
+
+      - name: Upload survival report + badge
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: crucible-survival-report
+          path: |
+            crucible-report.html
+            crucible-badge.svg
+            crucible.json
+            traces/

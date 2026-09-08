@@ -1,0 +1,831 @@
+spine_version: 0.4
+
+# sequencing.yml — The Gauntlet: the work-item graph the dev team self-routes from.
+#
+# This is the Sequencing Leaf. It converts the Spine (now v0.4, open-core +
+# suites) and the five disciplinary leaves (architecture / report / tour /
+# design / traceability) into a single routable graph: what is already built,
+# what ships next, and what unblocks what. No prose plan, no assignments — a
+# graph a dev pulls from and knows the next safe move. Every item traces to
+# exactly one Spine commitment (C1–C12); the graph as a whole preserves all
+# twelve.
+#
+# 0.4 is ADDITIVE on top of 0.3, not a rewrite: everything that shipped stays
+# shipped, everything that was mid-flight stays mid-flight, and two new
+# commitments arrive as two new slices.
+#
+#   - C7 (N-trials fail-closed runner) status flips from not_started to
+#     DONE: crucible/trials.py (TrialAggregate, aggregate_trials) and
+#     crucible/run.py's run_trials() are real code, wired into cli.py's
+#     --trials flag and report.py's multi-trial rendering, now covered by
+#     tests/test_crucible.py (46 passing: aggregate/prevalence + e2e stochastic).
+#     Built, not proven, not done.
+#   - NEW slice `suites` (C11): the SUITE is now the contribution unit — a
+#     pick-and-choose, real-world scenario corpus built from one-file
+#     villains (C6), discovered not registered, every scenario mapped to the
+#     frozen-8 (C4). Nothing in this slice is started; the one-file villain
+#     atom it generalizes already exists (I14, done).
+#   - NEW slice `managed` (C12): an OPTIONAL managed tier — hosted agent
+#     profile + longitudinal analytics — kept neutral by three bright lines
+#     (verdict computed only by OSS and reproducible offline; verdict/suite
+#     certification never for sale or withheld; private failure data
+#     isolated, never a public ranking). Scoped as a separate 2–4 MONTH
+#     effort that starts only AFTER OSS traction (M1). Nothing started.
+#
+# Slices are shippable increments, not phases: `mvp` already ships today,
+# `live` turns the fixture control into a real, classified endpoint verdict
+# with a disclosed trust basis (shipped), `community` grows the town between
+# events (one-file villains shipped; packs not yet), `assurance-mvp` is
+# iteration-1 of the 0.3 roadmap (C7 in progress; C9/C10 not started),
+# `suites` is the 0.4 growth-surface slice (C11, not started), and `managed`
+# is the 0.4 optional value-add slice (C12, not started, deliberately last).
+# Items already present in crucible/crucible/ (tripwires.py, adapter.py,
+# cassette.py, traps.py, trials.py, report.py, run.py, cli.py, config.py) and
+# tests/test_crucible.py (43 passing) are marked accordingly — the graph
+# reflects the REAL code, not aspiration.
+
+slices:
+  - id: mvp
+    name: Clone-and-run fixture gauntlet
+    description: >
+      Ships today. git clone → `crucible run` → survival report against the
+      deterministic fixture (naive springs all eight, hardened holds all eight).
+      Eight frozen tripwires, seeded traps, byte-identical replay trace,
+      non-zero exit on any SPRUNG. No account, no cloud, laptop-only. (C1–C4,
+      fixture side of C5, C6.)
+  - id: live
+    name: Real A2A/MCP endpoint, classified
+    description: >
+      The same trap floor hits the developer's live agent over A2A
+      message/send or MCP tools/call. A live STRUCTURED response is now
+      CLASSIFIED into SPRUNG/HELD by the record/replay cassette using the
+      same per-tripwire predicates as the fixture floor, recorded once and
+      replayed byte-for-byte offline; a live PROSE response stays honestly
+      NOT_ARMED, never a faked verdict. Every HELD carries its provenance
+      (mapped_tool / self_named / flag) and opt-in gates
+      (--require-tool-verdict / --fail-on-unmapped / --require-armed) refuse
+      a self-attested green. Unreachable endpoints are a connection error
+      (exit 2), never a survival verdict. (C5 upgraded, C8.)
+  - id: community
+    name: One-file villain SDK + docs
+    description: >
+      A new adversary is one file — discovered, not registered — with named
+      credit and zero compute cost to contribute. Contribution docs, the onboard
+      value tour, and the MCP adapter let the town grow meaner between events.
+      Domain villain packs (grouped multi-file collections) are the one piece
+      of this slice still ahead of us. (C6, C5 for MCP.)
+  - id: assurance-mvp
+    name: "Iteration-1 of the 0.3 pivot: N-trials, bundle, external vetting"
+    description: >
+      The 0.3 slice, sized to ~3–4 weeks. Turns a single-trial live verdict
+      into the thing a decision moment actually needs: a fail-closed verdict
+      over N trials on a stochastic agent (C7 — DONE: run_trials +
+      aggregate_trials shipped and test-covered), a reproducible
+      assurance bundle with an environment fingerprint and a bundle diff for
+      catching model-swap/release regressions (C9, not started), and a
+      productized external-agent vetting workflow — point Crucible at an
+      endpoint you do not own and get a verdict and a bundle (C10a, not
+      started; the wire itself already exists from the `live` slice).
+  - id: suites
+    name: Suite SDK + seed suites (C11 — suites as the contribution unit)
+    description: >
+      NEW in 0.4. Formalizes the pick-and-choose scenario SUITE as the
+      contribution unit, generalizing the one-file villain (C6) into a
+      real-world scenario corpus: a suite manifest lists scenarios, each one
+      mapping to the frozen-8 (C4), discovered not registered, named credit.
+      `crucible run --suites payments,identity` lets a builder pick suites
+      that match their agent. A curated suite index catalogs attacks, not
+      agents — never a registry of agents of our own. Suites are the growth
+      surface; the eight verdicts stay the fixed taxonomy — a new agent type
+      gets new suites here, never a new verdict type (that would be an
+      explicit v2 decision, never drift). Nothing in this slice is started.
+  - id: managed
+    name: Optional managed tier — hosted profile + longitudinal analytics (C12)
+    description: >
+      NEW in 0.4, and deliberately LAST. A 2–4 MONTH effort scoped to start
+      only AFTER OSS traction (read: M1 — 25 external assurance runs/month —
+      is in sight), because the three neutrality bright lines only mean
+      something once the free core has a track record to be audited against.
+      Pure value-add: a hosted per-agent profile and longitudinal analytics
+      (history, model-version trends, fleet view, audit/compliance
+      packaging) that never compute or gate the verdict — the OSS alone
+      judges, reproducibly and offline (C2, C12). Nothing in this slice is
+      started.
+
+items:
+  # ---------------------------------------------------------------------------
+  # DONE — mvp: the deterministic fixture floor
+  # ---------------------------------------------------------------------------
+  - id: I01
+    title: Eight frozen tripwires + tri-state detectors (evaluate_tripwires)
+    discipline: backend
+    effort: 4
+    user_visible: false
+    spine_commitment: C4
+    slices: [mvp]
+    status: done
+    # tripwires.py: Tripwire dataclass, TripwireStatus SPRUNG/HELD/NOT_ARMED,
+    # 4 agent-side + 4 protocol-side, fail-closed on unclassified actions.
+
+  - id: I02
+    title: Fixture A2A adapter — naive/hardened deterministic profiles
+    discipline: backend
+    effort: 2
+    user_visible: false
+    spine_commitment: C5
+    slices: [mvp]
+    status: done
+    # adapter.py: FixtureA2AClient, pure fn of (trap, profile) — the shipped
+    # differential control, no network.
+
+  - id: I03
+    title: A2AClient Protocol seam + message/send builder & parser
+    discipline: backend
+    effort: 2
+    user_visible: false
+    spine_commitment: C5
+    slices: [mvp]
+    status: done
+    # adapter.py: one-method send() seam; build_message_send_request /
+    # parse_message_send_result — swap fixture for live without touching traps.
+
+  - id: I04
+    title: Home-Alone trap engine — scripted traps + envoy (no LLM)
+    discipline: backend
+    effort: 5
+    user_visible: false
+    spine_commitment: C6
+    slices: [mvp]
+    status: done
+    # traps.py: TrapAgent (seeded state machines, _SCRIPTS + build_trap),
+    # A2AEnvoyAgent records each decisive g:reply event.
+
+  - id: I05
+    title: gauntlet_factory + scenario "gauntlet" registration
+    discipline: backend
+    effort: 2
+    user_visible: false
+    spine_commitment: C1
+    slices: [mvp]
+    status: done
+    # scenario.py: wires envoy + one trap per armed tripwire from task.config
+    # (mode, aut_profile, endpoint, tripwires subset).
+
+  - id: I06
+    title: "`crucible run` CLI — prints survival report, non-zero exit on SPRUNG"
+    discipline: cli
+    effort: 3
+    user_visible: true
+    spine_commitment: C1
+    slices: [mvp]
+    status: done
+    # cli.py: crucible run [--endpoint | --profile] [--tripwires] [-o]; also
+    # crucible run. Header + frozen rows + PASS/FAIL verdict + exit code.
+
+  - id: I07
+    title: Deterministic replay contract — seed → byte-identical JSONL trace
+    discipline: backend
+    effort: 2
+    user_visible: true
+    spine_commitment: C2
+    slices: [mvp]
+    status: done
+    # Leverages the deterministic engine + append-only sort_keys trace writer; the
+    # trap side has no LLM and no clock.
+
+  - id: I08
+    title: Gauntlet test suite (tripwires, adapter, differential e2e, determinism)
+    discipline: testing
+    effort: 3
+    user_visible: false
+    spine_commitment: C4
+    slices: [mvp]
+    status: done
+    # tests/test_crucible.py: 43 passing — frozen-list, adapter, evaluate,
+    # cassette classify, provenance/gates, and end-to-end differential floor.
+    # trials.py shipped and test-covered — see I22/I23 (done).
+
+  # ---------------------------------------------------------------------------
+  # DONE — live slice: real protocol, now CLASSIFIED (C5 upgraded)
+  # ---------------------------------------------------------------------------
+  - id: I09
+    title: Live HttpA2AClient — record/replay cassette CLASSIFIER (SPRUNG/HELD)
+    discipline: backend
+    effort: 8
+    user_visible: false
+    spine_commitment: C5
+    slices: [live]
+    status: done
+    # cassette.py: records a live structured response ONCE keyed on request
+    # body; classify_a2a_response / classify_mcp_response judge it with the
+    # SAME per-tripwire predicates as the fixture floor → SPRUNG/HELD,
+    # byte-identical replay from then on. A live prose reply still stays
+    # NOT_ARMED — never a fabricated green.
+
+  - id: I10
+    title: Endpoint-unreachable error handling — kept separate from a FAIL verdict
+    discipline: cli
+    effort: 2
+    user_visible: true
+    spine_commitment: C5
+    slices: [live]
+    status: done
+    # design §3.9: plain error naming --endpoint + cause, no pills, no partial
+    # verdict, distinct non-zero exit (2). A broken agent is untested, not failed.
+
+  - id: I11
+    title: Live prose-response honest NOT_ARMED — never a fabricated green
+    discipline: cli
+    effort: 1
+    user_visible: true
+    spine_commitment: C5
+    slices: [live]
+    status: done
+    # Permanent refusal: a free-prose reply from a live agent can never
+    # become a faked SPRUNG/HELD, by design, forever.
+
+  - id: I12
+    title: Wire report.html render() to real JSONL trace (survival report UI)
+    discipline: frontend
+    effort: 4
+    user_visible: true
+    spine_commitment: C3
+    slices: [mvp, live]
+    status: done
+    # report.html: themed HTML — verdict card, meter, Agent-side/Protocol-side
+    # sections, "How far to trust each green", coverage + verdict-strength
+    # lines, replay cmd, refusal footer. Closed over the eight tripwires — no
+    # scoring, no advice.
+
+  - id: I13
+    title: Print the replay command in the report footer
+    discipline: cli
+    effort: 1
+    user_visible: true
+    spine_commitment: C2
+    slices: [mvp]
+    status: done
+    # design §4.2: `Replay: crucible run --endpoint <url> --seed 42` — makes
+    # the byte-identical replay contract fully specified on screen.
+
+  - id: I16
+    title: MCP adapter — second A2AClient implementation, same cassette seam
+    discipline: backend
+    effort: 6
+    user_visible: true
+    spine_commitment: C5
+    slices: [live]
+    status: done
+    # McpClient behind the same send() seam; classify_mcp_response shares the
+    # cassette classifier with A2A. traps/envoy/tripwires unchanged.
+
+  # ---------------------------------------------------------------------------
+  # DONE — live slice: trust basis / provenance (C8, shipped alongside C5)
+  # ---------------------------------------------------------------------------
+  - id: I18
+    title: Provenance model — every HELD tagged mapped_tool / self_named / flag
+    discipline: backend
+    effort: 4
+    user_visible: false
+    spine_commitment: C8
+    slices: [mvp, live]
+    status: done
+    # tripwires.py / adapter.py: a HELD from a judged tool call (mapped_tool)
+    # is distinguished from the agent's own bare effect name (self_named) or a
+    # self-set flag. A SPRUNG is always a real observed bad action regardless
+    # of provenance — only the green needs a trust basis.
+
+  - id: I19
+    title: Verdict-strength invariant — tallied and surfaced in report + JSON
+    discipline: backend
+    effort: 3
+    user_visible: true
+    spine_commitment: C8
+    slices: [mvp, live]
+    status: done
+    # verdict_strength_line tallies mapped vs self-named holds; summary JSON
+    # exposes verdict_strength and per-result provenance; report discloses all
+    # three hold families — "how far to trust each green," never a score.
+
+  - id: I20
+    title: Trust gates — --require-tool-verdict / --fail-on-unmapped / --require-armed
+    discipline: cli
+    effort: 3
+    user_visible: true
+    spine_commitment: C8
+    slices: [live]
+    status: done
+    # cli.py: opt-in gates that fail a run resting on a self-attested green.
+    # The gate never claims more certainty than it observed (C3 held).
+
+  - id: I21
+    title: Coverage note — armed-vs-selected tripwires + unmapped-tool flag
+    discipline: backend
+    effort: 2
+    user_visible: true
+    spine_commitment: C8
+    slices: [live]
+    status: done
+    # evaluate_coverage: counts armed tripwires against the selected set and
+    # flags any tool call Crucible could not map to a judged effect, named
+    # explicitly in the report text rather than hidden as a clean green.
+
+  # ---------------------------------------------------------------------------
+  # NOT STARTED — community slice: villain packs
+  # ---------------------------------------------------------------------------
+  - id: I14
+    title: One-file villain SDK — drop-in adversary, discovered not registered
+    discipline: backend
+    effort: 5
+    user_visible: false
+    spine_commitment: C6
+    slices: [community]
+    status: done
+    # Formalize the _SCRIPTS/build_trap pattern into a discovery mechanism so a
+    # new villain is a single file arming one of the eight frozen tripwires,
+    # with named credit and zero compute cost. Tripwires stay frozen. This is
+    # the atom the C11 suite SDK (I29) generalizes into a scenario corpus.
+
+  - id: I15
+    title: Villain contribution docs + named-credit path
+    discipline: docs
+    effort: 2
+    user_visible: true
+    spine_commitment: C6
+    slices: [community]
+    status: done
+    # How to add a villain in one file, the eight tripwires it may arm, and how
+    # credit is attributed. Serves M4 (villain PRs merged in a quiet week).
+
+  - id: I17
+    title: Onboard value tour / landing from tour.yml
+    discipline: design
+    effort: 4
+    user_visible: true
+    spine_commitment: C1
+    slices: [community]
+    status: done
+    # Render the seven-step tour.yml as the clone-and-run onboarding surface:
+    # the storm → one command → trap-floor engine → eight tripwires → the
+    # sprung line → real endpoint → the refusal.
+
+  - id: I28
+    title: Villain packs — grouped multi-file domain collections
+    discipline: backend
+    effort: 3
+    user_visible: true
+    spine_commitment: C6
+    slices: [community]
+    status: not_started
+    # Beyond a single one-file villain: a named domain pack (e.g. "agentic
+    # commerce pack") that groups several villains arming related tripwires,
+    # still discovered not registered, still one predicate table per tripwire.
+
+  # ---------------------------------------------------------------------------
+  # IN PROGRESS — assurance-mvp slice: C7 fail-closed N-trials
+  # ---------------------------------------------------------------------------
+  - id: I22
+    title: N-trials runner — samples the stochastic AUT through the floor N times
+    discipline: backend
+    effort: 3
+    user_visible: true
+    spine_commitment: C7
+    slices: [assurance-mvp]
+    status: done
+    # BUILT, not yet proven: crucible/run.py's run_trials() and cli.py's
+    # --trials N flag already loop the existing single-trial gauntlet_factory
+    # run over the same seed family against the SAME live/fixture/callable
+    # agent, collecting one tri-state result per tripwire per trial. No new
+    # trap logic — the floor stays deterministic; only the AUT samples anew.
+    # tests/test_crucible.py carries no trials.py coverage yet — that gap is
+    # why this is in_progress, not done.
+
+  - id: I23
+    title: Fail-closed aggregation + prevalence ("sprang in k of N") as evidence
+    discipline: backend
+    effort: 2
+    user_visible: true
+    spine_commitment: C7
+    slices: [assurance-mvp]
+    status: done
+    # BUILT, not yet proven: crucible/trials.py's TrialAggregate +
+    # aggregate_trials() already collapse per-trial results into a run-level
+    # SPRUNG-if-any / HELD-if-all verdict, with prevalence surfaced in
+    # cli.py's report line and report.py's summary JSON strictly as evidence
+    # (C3 refusal holds even under C7). No test coverage of trials.py yet —
+    # marked in_progress until that lands.
+
+  - id: I24
+    title: Environment fingerprint — model, model-version, prompt hash, tools, date
+    discipline: backend
+    effort: 2
+    user_visible: false
+    spine_commitment: C9
+    slices: [assurance-mvp]
+    status: not_started
+    # Captured once per run from the adapter/config: which model backed the
+    # AUT, its version if disclosed, a hash of the prompt/config actually
+    # used, the tool set the agent exposed, and the run date. The fact that
+    # this can only be partially known for a third-party agent (C10) is
+    # itself disclosed, never papered over.
+
+  - id: I25
+    title: Assurance bundle — verdict + worst-case trace + fingerprint + cassette
+    discipline: backend
+    effort: 2
+    user_visible: true
+    spine_commitment: C9
+    slices: [assurance-mvp]
+    status: not_started
+    # A single artifact (directory or archive) that is evidence, not a
+    # screenshot: the fail-closed verdict, the worst-case replayable trace
+    # picked from the N-trial run, the environment fingerprint, and the
+    # cassette — re-runnable proof of exactly what was tested, handable to a
+    # teammate, auditor, or risk committee. Also the artifact the C12 managed
+    # tier's hosted profile store (I33) and audit guarantee (I35) build on.
+
+  - id: I26
+    title: Bundle diff — surfaces a model-swap / release regression between two bundles
+    discipline: cli
+    effort: 2
+    user_visible: true
+    spine_commitment: C9
+    slices: [assurance-mvp]
+    status: not_started
+    # `crucible diff bundle-a bundle-b`: fingerprint delta (what changed about
+    # the AUT) alongside verdict delta (what changed about the outcome) per
+    # tripwire — the Jepsen-style artifact that lets M3 ("regressions caught")
+    # and M5 ("ecosystem echo") be answered with a link, not a claim.
+
+  - id: I27
+    title: Productized external-agent vetting flow — point at an agent you do not own
+    discipline: cli
+    effort: 4
+    user_visible: true
+    spine_commitment: C10
+    slices: [assurance-mvp]
+    status: not_started
+    # The A2A/MCP wire already reaches a third-party endpoint (I09/I16,
+    # shipped); what is missing is the vetting-shaped workflow around it: a
+    # `crucible vet --endpoint <url>` entry point tuned for procurement /
+    # registry use (a party that does NOT own the agent), defaulting to
+    # --require-tool-verdict-strength gates (I20) so a self-attested green
+    # from an unowned agent cannot pass quietly, and emitting the bundle
+    # (I25) as the handoff artifact for a risk committee.
+
+  # ---------------------------------------------------------------------------
+  # NOT STARTED — suites slice: C11 suites as the contribution unit
+  # ---------------------------------------------------------------------------
+  - id: I29
+    title: Suite SDK — manifest format + scenario-to-tripwire mapping
+    discipline: backend
+    effort: 8 # sized ~1-2 weeks
+    user_visible: false
+    spine_commitment: C11
+    slices: [suites]
+    status: not_started
+    # Generalizes the one-file villain pattern (I14) into a SUITE: a manifest
+    # (name, domain, scenarios[]) where every scenario declares which of the
+    # frozen-8 tripwire(s) it arms. Discovered not registered, named credit —
+    # the growth surface is suites, never new verdict types; a new tripwire
+    # stays an explicit v2 taxonomy decision, never silent drift.
+
+  - id: I30
+    title: Suite selection — "crucible run --suites payments,identity"
+    discipline: cli
+    effort: 3 # sized ~3 days
+    user_visible: true
+    spine_commitment: C11
+    slices: [suites]
+    status: not_started
+    # CLI grows --suites <comma-list>, resolving to the discovered suite
+    # manifests (I29) and arming only their scenarios' tripwires — pick-and-
+    # choose by agent type, composable with --trials (C7) and --endpoint (C5).
+
+  - id: I31
+    title: 2-3 seed real-world suites (payments, customer-service, browsing)
+    discipline: content
+    effort: 8 # sized ~1-2 weeks
+    user_visible: true
+    spine_commitment: C11
+    slices: [suites]
+    status: not_started
+    # First suites authored in the I29 manifest format: payments (money-leak /
+    # authority-escalation-heavy), customer-service (secret-disclosure /
+    # forged-identity-heavy), browsing (hostile-service-capture-heavy) — each
+    # scenario still maps to the frozen-8, proving the suite unit end to end.
+
+  - id: I32
+    title: Suite index — curated catalog of suites (attacks, not agents)
+    discipline: docs
+    effort: 3 # sized ~3 days
+    user_visible: true
+    spine_commitment: C11
+    slices: [suites]
+    status: not_started
+    # A discoverability page listing available suites, their domain, and
+    # which frozen-8 tripwires they exercise — explicitly an index of
+    # ATTACKS, the one registry-shaped thing the Spine allows (never a
+    # registry / namespace / discovery product of agents of our own).
+
+  # ---------------------------------------------------------------------------
+  # NOT STARTED — managed slice: C12 open-core, only the free core judges
+  # (a separate 2-4 MONTH effort, deliberately scoped to start AFTER OSS
+  # traction — M1, 25 external assurance runs/month — is in sight)
+  # ---------------------------------------------------------------------------
+  - id: I33
+    title: Hosted agent profile store (managed tier)
+    discipline: backend
+    effort: 40 # slice of a 2-4 month managed-tier effort, post-traction
+    user_visible: true
+    spine_commitment: C12
+    slices: [managed]
+    status: not_started
+    # Persists a per-agent profile (identity, run history, fingerprints) in
+    # the optional hosted service. Stores what the OSS bundle (C9/I25)
+    # already produced — never computes or re-derives a verdict; the free
+    # core alone judges (bright line 2: never for sale, never withheld).
+
+  - id: I34
+    title: Longitudinal analytics dashboard (history, model-version trends, fleet view)
+    discipline: frontend
+    effort: 40 # slice of a 2-4 month managed-tier effort, post-traction
+    user_visible: true
+    spine_commitment: C12
+    slices: [managed]
+    status: not_started
+    # Reads the hosted profile store (I33) to chart safety evidence over
+    # time — did a model swap regress a tripwire? across the fleet? Framed
+    # explicitly as MORE EVIDENCE, never a safety score: no leaderboard, no
+    # cross-account leakage of private failure data (bright line 3).
+
+  - id: I35
+    title: Reproducible-verdict audit guarantee — cloud auditable against free core
+    discipline: backend
+    effort: 20 # slice of a 2-4 month managed-tier effort, post-traction
+    user_visible: false
+    spine_commitment: C12
+    slices: [managed]
+    status: not_started
+    # The mechanism that makes bright line 1 real: any verdict surfaced in
+    # the managed tier must be independently reproducible by re-running the
+    # OSS against the same C9 bundle, offline, with no call to the managed
+    # service required — the same determinism that makes the local gate
+    # trustworthy is what makes the hosted tier verifiable, not trusted on
+    # faith.
+
+edges:
+  # ---- structural dependency spine (mostly among done items) ----
+  - from: I03
+    to: I02
+    type: blocks
+    reason: FixtureA2AClient implements the send() seam defined by the A2AClient Protocol.
+  - from: I01
+    to: I04
+    type: informs
+    reason: Trap scripts reference each tripwire's safe/unsafe action names from the frozen table.
+  - from: I02
+    to: I05
+    type: blocks
+    reason: gauntlet_factory wires the fixture client into the scenario.
+  - from: I04
+    to: I05
+    type: blocks
+    reason: The factory wires the envoy + one trap per armed tripwire.
+  - from: I05
+    to: I06
+    type: blocks
+    reason: The CLI drives the registered "gauntlet" scenario the factory builds.
+  - from: I07
+    to: I06
+    type: informs
+    reason: The trace writer produces the JSONL the report reads and the footer points to.
+  - from: I01
+    to: I06
+    type: blocks
+    reason: The report renders the frozen tripwire order and tri-state that tripwires.py defines.
+  - from: I01
+    to: I08
+    type: informs
+    reason: Tests assert the frozen list, fail-closed detectors, and the differential floor.
+
+  # ---- live slice: real protocol, now classified ----
+  - from: I03
+    to: I09
+    type: blocks
+    reason: Live classification is built on the same send() seam and the HttpA2AClient it defines.
+  - from: I09
+    to: I11
+    type: informs
+    reason: >
+      I11's prose-stays-NOT_ARMED refusal is only meaningful once I09 exists
+      to classify the structured case — otherwise everything was NOT_ARMED.
+  - from: I03
+    to: I10
+    type: informs
+    reason: Endpoint-unreachable handling wraps the HttpA2AClient POST failures the seam surfaces.
+  - from: I06
+    to: I12
+    type: informs
+    reason: The terminal report's frozen shape and copy are the source of truth the HTML report mirrors.
+  - from: I01
+    to: I12
+    type: blocks
+    reason: The HTML report copies the eight tripwire titles/one-liners/action names verbatim from tripwires.py.
+  - from: I07
+    to: I12
+    type: blocks
+    reason: render() derives the report entirely from the JSONL trace the replay contract writes.
+  - from: I09
+    to: I12
+    type: blocks
+    reason: Live SPRUNG/HELD results only appear in the HTML report once live classification exists (now shipped).
+  - from: I06
+    to: I13
+    type: blocks
+    reason: The replay-command line is printed by the same CLI report path.
+  - from: I03
+    to: I16
+    type: blocks
+    reason: The MCP adapter is another implementation behind the same send() seam.
+  - from: I09
+    to: I16
+    type: informs
+    reason: MCP reuses the cassette classifier I09 built rather than inventing a second one.
+
+  # ---- live slice: trust basis / provenance (C8) ----
+  - from: I01
+    to: I18
+    type: informs
+    reason: Provenance tags attach to the same per-tripwire HELD result the frozen table defines.
+  - from: I09
+    to: I18
+    type: blocks
+    reason: A live classified result is the thing provenance is attached to — mapped_tool vs self_named only exists once classification exists.
+  - from: I18
+    to: I19
+    type: blocks
+    reason: The verdict-strength tally counts the mapped_tool/self_named/flag tags I18 attaches.
+  - from: I19
+    to: I20
+    type: blocks
+    reason: The trust gates threshold on the verdict-strength counts I19 computes.
+  - from: I18
+    to: I21
+    type: informs
+    reason: The coverage note's unmapped-tool flag reuses the same tool-call classification path provenance depends on.
+  - from: I12
+    to: I19
+    type: informs
+    reason: The HTML report's "how far to trust each green" section renders the verdict-strength line I19 computes.
+
+  # ---- community slice ----
+  - from: I04
+    to: I14
+    type: blocks
+    reason: The villain SDK generalizes the existing _SCRIPTS/build_trap trap pattern into a discovery mechanism.
+  - from: I14
+    to: I15
+    type: blocks
+    reason: The contribution docs describe the one-file SDK once its shape is fixed.
+  - from: I06
+    to: I17
+    type: informs
+    reason: The onboarding tour anchors on the real CLI invocation and report lines.
+  - from: I15
+    to: I17
+    type: informs
+    reason: The "add a villain" step of the tour points at the contribution docs.
+  - from: I14
+    to: I28
+    type: blocks
+    reason: A pack is a named grouping of one-file villains — the single-file mechanism must exist first.
+
+  # ---- assurance-mvp slice: C7 fail-closed N-trials ----
+  - from: I06
+    to: I22
+    type: blocks
+    reason: The N-trials runner adds --trials N to the existing single-trial CLI entry point rather than replacing it.
+  - from: I05
+    to: I22
+    type: blocks
+    reason: Each trial is one loop of the existing gauntlet_factory scenario against the same AUT.
+  - from: I22
+    to: I23
+    type: blocks
+    reason: Fail-closed aggregation and per-trap prevalence are computed over the set of per-trial results I22 produces.
+  - from: I18
+    to: I23
+    type: informs
+    reason: Prevalence is reported per tripwire alongside the existing provenance tag, not as a replacement for it.
+  - from: I08
+    to: I23
+    type: informs
+    reason: >
+      trials.py has no test coverage yet inside the 43-passing suite — the
+      reason I22/I23 sit at in_progress rather than done.
+
+  # ---- assurance-mvp slice: C9 assurance bundle ----
+  - from: I09
+    to: I24
+    type: informs
+    reason: The fingerprint's tool-set and model fields are read off the same adapter/cassette metadata classification already captures.
+  - from: I07
+    to: I25
+    type: blocks
+    reason: The bundle's worst-case trace is a byte-identical replayable JSONL trace from the existing C2 contract.
+  - from: I09
+    to: I25
+    type: blocks
+    reason: The bundle packages the cassette artifact the record/replay classifier already produces.
+  - from: I24
+    to: I25
+    type: blocks
+    reason: The bundle cannot be assembled until the environment fingerprint exists to embed in it.
+  - from: I22
+    to: I25
+    type: blocks
+    reason: >
+      C7 blocks C9 — the "worst-case trace" the bundle packages is selected
+      from the N-trial run (I22), not a single sample, so the bundle is only
+      reproducible proof of an N-trials verdict once N-trials exist. This is
+      the same edge that carries C7's in_progress status forward: C9's
+      not_started items are correctly gated behind C7, not ahead of it.
+  - from: I25
+    to: I26
+    type: blocks
+    reason: Bundle-diff requires two already-assembled bundles to exist, each itself downstream of the N-trials worst-case trace.
+  - from: I23
+    to: I26
+    type: informs
+    reason: The diff's verdict delta is expressed in the same fail-closed/prevalence vocabulary I23 introduces.
+
+  # ---- assurance-mvp slice: C10 external vetting ----
+  - from: I09
+    to: I27
+    type: informs
+    reason: C5 informs C10 — the live A2A wire and cassette classifier already reach a third-party endpoint; I27 wraps it in a vetting-shaped workflow, it does not rebuild it.
+  - from: I16
+    to: I27
+    type: informs
+    reason: The MCP wire is the second protocol a vetting party may need to point Crucible at.
+  - from: I20
+    to: I27
+    type: blocks
+    reason: A vetting flow over an agent you do not own defaults to the trust gates so a self-attested green from an unowned agent cannot pass quietly.
+  - from: I25
+    to: I27
+    type: blocks
+    reason: The vetting flow's output artifact for a procurement/audit handoff is the assurance bundle, not a terminal report alone.
+
+  # ---- suites slice: C11 suites as the contribution unit (NEW 0.4) ----
+  - from: I14
+    to: I29
+    type: informs
+    reason: The suite SDK generalizes the existing one-file villain discovery pattern (C6) into a scenario-corpus manifest — it does not reinvent discovery.
+  - from: I29
+    to: I30
+    type: blocks
+    reason: C11 suite-SDK informs suite selection — --suites can only resolve manifests once the suite SDK's format exists.
+  - from: I29
+    to: I31
+    type: blocks
+    reason: The seed suites are authored in the manifest format the SDK defines.
+  - from: I30
+    to: I31
+    type: informs
+    reason: The seed suites are the first real content --suites resolves and selects against.
+  - from: I31
+    to: I32
+    type: blocks
+    reason: The suite index catalogs the seed suites once they exist — there is nothing to curate before I31 ships.
+
+  # ---- managed slice: C12 open-core, only the free core judges (NEW 0.4) ----
+  - from: I25
+    to: I33
+    type: blocks
+    reason: >
+      C12 managed depends on the C9 bundle — the hosted profile store
+      persists the C9 assurance bundle a run already produced, so the
+      managed tier has nothing to store until the reproducible bundle
+      exists.
+  - from: I25
+    to: I35
+    type: blocks
+    reason: The audit guarantee re-runs the OSS against the same C9 bundle offline, so the bundle format must exist first — C12 managed depends on the C9 bundle.
+  - from: I33
+    to: I34
+    type: blocks
+    reason: The analytics dashboard reads history off the hosted profile store.
+  - from: I34
+    to: I35
+    type: informs
+    reason: Whatever the dashboard surfaces must be independently reproducible from the bundle — the audit guarantee is checked against exactly what analytics shows.
+  - from: I22
+    to: I33
+    type: informs
+    reason: >
+      C7's fail-closed N-trials verdict is what the hosted profile
+      eventually stores history of. Sequencing confirms C7 (in progress)
+      sits well before C12 (not started, gated on OSS traction) — the
+      managed slice is not on the critical path to anything else shipping.

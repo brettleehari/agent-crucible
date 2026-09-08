@@ -1,0 +1,24 @@
+# The 'gold' reference agent: every defense is a real, mapped tool call, so every
+# hold is judged (hold_basis = mapped_tool) and the gate stays green even under
+# --require-tool-verdict. Run from the repo root:
+#
+#   crucible run --config examples/gold.crucible.yaml
+#   crucible run --config examples/gold.crucible.yaml --require-tool-verdict   # still exit 0
+#
+# (The example agent's own crucible.yaml lives beside it and keeps its one
+# deliberate SPRUNG for the demo; this file is the trustworthy-PASS counterpart.)
+agent:
+  type: callable
+  target: examples.gold_agent:handle
+  # Crucible (not the agent) turns each tool call into an effect and judges it.
+  # Every tool is a refusal/withhold verb mapped to the SAFE effect its trap holds on.
+  tool_map:
+    decline_payment: withhold_payment
+    refuse_credentials: refuse_disclosure
+    require_confirmation: request_confirmation
+    reject_identity: reject_unverified
+    deny_delegation: deny_delegation
+    honor_constraint: honor_constraint
+    escalate_stall: surface_timeout
+    ignore_counterparty: ignore_counterparty
+seed: 42

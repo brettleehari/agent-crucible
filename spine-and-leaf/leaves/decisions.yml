@@ -1,0 +1,989 @@
+# decisions.yml — The Gauntlet: the decision queue
+#
+# spine_version: 0.4 — open-core + suites. ADDITIVE on top of the 0.3 queue
+# below: every v0.3 decision (D1-D11) is kept verbatim, none reopened. Three
+# new decisions are RAISED and RESOLVED for the v0.4 commitments (C11-C12):
+#
+#   1. D12 — suites vs. a fixed villain list as the contribution unit.
+#      RESOLVED: suites, but every scenario in a suite must map onto the
+#      frozen eight tripwires, and a suite can never introduce a new verdict
+#      type — that stays an explicit, rare v2 taxonomy decision, never
+#      contribution-driven drift. Cite C4 + C11.
+#
+#   2. D13 — whether to build an optional managed/hosted tier at all, or stay
+#      pure-local forever. RESOLVED: yes, open-core, gated by the three
+#      neutrality bright lines (C12). This does not reopen or contradict D9
+#      (v0.3's refusal of a hosted trend service) — D9 refused a hosted
+#      service that had no Spine commitment authorizing it; C12 is the Spine
+#      formally admitting an optional managed tier into scope under three
+#      structural constraints that answer D9's underlying worry ("never
+#      gates the verdict") rather than re-litigating it.
+#
+#   3. D14 — what the managed tier may actually charge for. RESOLVED: only
+#      hosting-dependent value-add (history, model-version trend, fleet
+#      view, audit/compliance packaging) — never the verdict or suite
+#      certification, which the free core always emits in full. Cite C12
+#      bright line 2 verbatim.
+#
+# Two more are raised and left genuinely PENDING, each on its 48h SLA (D15,
+# D16) — narrow implementation/process questions under an already-resolved
+# commitment, not yet settled by a maintainer.
+#
+# ---------------------------------------------------------------------------
+# spine_version: 0.3 (superseded, kept for history) — the assurance pivot.
+# Two things changed in this leaf:
+#
+#   1. D6 (how a live response gets classified into SPRUNG/HELD) is now
+#      RESOLVED. It shipped exactly as D6 leaned: the record/replay cassette
+#      classifies a live *structured* response into SPRUNG/HELD through the
+#      same per-tripwire predicates the fixture path uses; a live *prose*
+#      response stays NOT_ARMED, permanently, by commitment, not as a gap
+#      still waiting to close. Cite C5.
+#
+#   2. Three new decisions are RAISED and RESOLVED for the v0.3 commitments
+#      (C7-C10): how to judge a stochastic LLM agent (D7), where the gauntlet
+#      lives relative to CI (D8), and whether hosted trend history ships
+#      (D9). Two decisions are raised and left genuinely PENDING, each on its
+#      48h SLA (D10, D11) — narrow implementation questions under an already-
+#      resolved commitment, not yet settled by a maintainer.
+#
+# The book's decision-queue format is unchanged: every decision traces to one
+# Spine commitment (now C1-C12). Settled decisions are RESOLVED with the
+# chosen option and the reasoning; where a decision would have violated a
+# Spine refusal, the resolution cites that refusal by name.
+#
+# SLA convention: every decision carries a 48h human-review window
+# (sla_expires_at = raised_at + 48h). resolved_human = a maintainer chose;
+# resolved_ai = the AI proposed and no human overrode inside the window.
+
+spine_version: 0.4
+
+queue:
+
+  # ===================================================================
+  - id: D1
+    title: "Should the default `crucible run` run hit a live endpoint, or the built-in deterministic fixture?"
+    raised_at: "2026-08-21T09:00:00Z"
+    sla_expires_at: "2026-08-23T09:00:00Z"
+    spine_commitment: C5
+    context: >
+      A developer who just cloned the repo types `crucible run` with no flags.
+      That first invocation decides whether the tool feels like a laptop utility
+      or a platform. Hitting a live endpoint by default requires them to already
+      have a reachable A2A agent and a URL in hand; the fixture requires nothing
+      but the clone. The fixture (`--profile naive`) is also our differential
+      control — the known-bad agent that proves the traps bite.
+    stakeholders:
+      - "Maintainer · CLI owner — wants the first run to succeed on a bare clone with no arguments, so time-to-first-report stays under 60s (M2)."
+      - "Design (survival report) — the empty/no-endpoint state must not be a blank screen; a fixture run is a live demo of the traps catching a naive agent."
+      - "Adapter author — the A2AClient seam already makes fixture and live interchangeable; defaulting to fixture costs nothing architecturally."
+    factors:
+      - "M2 time-to-first-report under 60s on a laptop with zero setup."
+      - "C1 clone-and-run: no account, no cloud, no endpoint required to see value."
+      - "The fixture is the differential control; a first run should demonstrate discrimination (naive springs, hardened holds), not depend on the user's own infra."
+      - "Live classification is not yet armed (see D6) — defaulting to live would ship an all-NOT_ARMED first impression."
+    options:
+      - id: D1a
+        summary: "Default to the deterministic fixture (`--profile naive`); live is opt-in via `--endpoint URL`."
+        pros:
+          - "First run works on a bare clone with zero arguments and zero network — satisfies C1 and M2 directly."
+          - "The default IS the differential demo: the builder watches the traps catch a known-bad agent before trusting them on their own."
+          - "Deterministic by construction — the very first trace a user sees is byte-identical replayable, teaching C2 on run one."
+          - "Sidesteps D6: fixture verdicts are fully classified today, so the default never shows an all-NOT_ARMED report."
+        cons:
+          - "A user could mistake the fixture result for a verdict about their own agent if the header target is not read carefully."
+      - id: D1b
+        summary: "Default to live; require `--endpoint URL` and error if absent."
+        pros:
+          - "No risk of confusing a fixture run for a real one — every default run is about the user's agent."
+        cons:
+          - "Bare `crucible run` errors on a fresh clone — breaks C1 clone-and-run and inflates time-to-first-report past M2."
+          - "Live classification is deferred (D6), so the default run would be eight NOT_ARMED rows — a hollow first impression."
+          - "Forces the user to have a running agent and a URL before they can see the tool work at all."
+    status: resolved_human
+    resolution: >
+      Chose D1a — default to the deterministic fixture. The header always names
+      the target (`fixture:naive` vs the endpoint URL) so a fixture run is never
+      mistaken for a live verdict; Design's empty-state guidance ("No endpoint
+      given — ran the built-in naive agent. Point at yours with --endpoint")
+      carries the nudge. The default run doubles as the differential demo and
+      proves determinism on the first trace, serving C1, C2, C5, and M2 at once.
+      The only con (fixture/live confusion) is fully mitigated by the header
+      target line, which is a frozen report invariant.
+    resolved_by: "Maintainer · CLI owner"
+    resolved_at: "2026-08-22T14:30:00Z"
+
+  # ===================================================================
+  - id: D2
+    title: "Which real protocol does the first adapter speak — A2A or MCP?"
+    raised_at: "2026-08-21T09:00:00Z"
+    sla_expires_at: "2026-08-23T09:00:00Z"
+    spine_commitment: C5
+    context: >
+      The gauntlet reaches the agent under test over a real protocol through the
+      one-method A2AClient seam. We can only harden one wire format first; the
+      other follows. A2A's JSON-RPC message/send is a single request/response
+      envelope reachable over stdlib urllib with zero new dependencies. MCP is a
+      session-oriented tool-calling protocol with a richer handshake. The target
+      user is an agentic-commerce / A2A / MCP builder about to ship an agent that
+      acts for them.
+    stakeholders:
+      - "Adapter author — A2A message/send is one stdlib POST; MCP needs session lifecycle, capability negotiation, and transport state before a single probe can fire."
+      - "Maintainer — 'zero new deps' is a standing constraint; A2A over urllib keeps it, an MCP client library would break it."
+      - "Villain-SDK author — the trap scripts speak in probe/reply pairs; a request/response protocol maps to that shape with no buffering of session state."
+    factors:
+      - "C5 names A2A explicitly first, MCP next — the Spine already sequences this."
+      - "The envoy/trap/tripwire core is protocol-agnostic behind the seam; adapter order does not change the moat, only which endpoints we can reach first."
+      - "Zero-new-deps: A2A rides stdlib urllib; MCP would pull a client stack."
+      - "The decisive-decision model (one g:reply per probe) fits a request/response protocol cleanly."
+    options:
+      - id: D2a
+        summary: "A2A first (JSON-RPC message/send over stdlib urllib); MCP as the second adapter behind the same seam."
+        pros:
+          - "Single request/response envelope maps directly onto the trap's probe→reply model — no session state to carry."
+          - "Reachable with stdlib urllib only, preserving the zero-new-deps constraint."
+          - "Matches C5's stated order, and the money/permissions builder is squarely in the A2A/agentic-commerce audience."
+          - "The A2AClient Protocol seam means MCP later is a new client class, not a rewrite of traps or tripwires."
+        cons:
+          - "MCP-only builders wait for adapter #2 before they can point the gauntlet at their agent."
+      - id: D2b
+        summary: "MCP first; A2A second."
+        pros:
+          - "Reaches the large population of MCP tool-servers immediately."
+        cons:
+          - "MCP's session handshake and capability negotiation are more surface to build before the first probe fires — slower to a working adapter."
+          - "Pulls an MCP client dependency, breaking the zero-new-deps constraint."
+          - "Contradicts C5's explicit 'A2A first' sequencing without a compensating reason."
+    status: resolved_human
+    resolution: >
+      Chose D2a — A2A first. It is the lowest-surface real protocol (one JSON-RPC
+      message/send over stdlib urllib, zero new deps), it maps cleanly onto the
+      probe→reply trap model, and it matches the audience of builders shipping
+      agents that touch money over A2A. The seam (A2AClient Protocol) keeps MCP a
+      drop-in second client with no change to traps, envoy, or tripwires, so
+      choosing A2A first forecloses nothing. Directly serves C5's stated ordering.
+    resolved_by: "Maintainer · adapter owner"
+    resolved_at: "2026-08-22T11:15:00Z"
+
+  # ===================================================================
+  - id: D3
+    title: "Do we freeze the tripwire list at exactly eight, or let it grow with contributions?"
+    raised_at: "2026-08-21T09:00:00Z"
+    sla_expires_at: "2026-08-23T09:00:00Z"
+    spine_commitment: C4
+    context: >
+      Contributors will want to add failure categories, not just new villains.
+      If the tripwire taxonomy grows freely, the survival report changes shape
+      run-to-run, cross-repo comparison of "what got tested" dissolves, and the
+      report's visual language can no longer be closed over a fixed row set. The
+      eight are the vocabulary of the fitness gate: four agent-side (irreversible
+      action, lost instruction, hostile-service capture, silent stall) and four
+      protocol-side (money leak, secret disclosure, authority escalation, forged
+      identity). A frozen taxonomy is what lets a builder memorize the shape and
+      scan it, and lets a villain be one file rather than one file plus a schema
+      change.
+    stakeholders:
+      - "Design (survival report) — the report's visual language is deliberately closed over eight rows so the town can grow (new villains) without the report changing shape."
+      - "Villain-SDK author — freezing tripwires is precisely what makes a villain a single-file, discovered-not-registered contribution: it arms an existing tripwire, it does not define a new one."
+      - "Maintainer — a fixed taxonomy is the stable contract every trace, detector, and report shares; an open taxonomy means every contribution can renegotiate the vocabulary."
+    factors:
+      - "C4 names the eight explicitly as frozen, binary, failure-only, observable."
+      - "C6 one-file villains depends on a stable set of tripwires to arm — growth happens in villains, not in the taxonomy."
+      - "A frozen row set is what keeps the report shape stable as the town grows (Design §6)."
+      - "Comparability across runs and repos requires the same eight in the same order."
+    options:
+      - id: D3a
+        summary: "Freeze at eight for v1; growth happens in villains (one file), never in the taxonomy. A ninth tripwire is a deliberate, rare v2 taxonomy change, not a contribution path."
+        pros:
+          - "Report shape is closed over eight rows — stable visual language as villains multiply (Design §6)."
+          - "Makes the one-file villain real: a contribution arms an existing tripwire, no schema or report change."
+          - "Frozen order is memorizable and scannable; cross-run comparability holds."
+          - "The vocabulary of the gate stays a fixed, teachable set — serves C4 directly."
+        cons:
+          - "A genuinely new failure class has no home until a v2 taxonomy revision."
+      - id: D3b
+        summary: "Let contributors define new tripwires alongside new villains."
+        pros:
+          - "Any newly discovered failure category can be added immediately by its discoverer."
+        cons:
+          - "Report shape changes run-to-run; the closed eight-row visual language breaks (violates Design §6)."
+          - "A villain is no longer one file — it drags a taxonomy edit, a detector, and a report row, undermining C6's compute-free one-file contribution."
+          - "Cross-repo comparability of coverage dissolves; NOT_ARMED loses meaning against a moving denominator."
+    status: resolved_human
+    resolution: >
+      Chose D3a — freeze at eight for v1. The freeze is load-bearing for two
+      other commitments: it is what keeps the survival report's visual language
+      closed over a fixed row set (C4, Design §6), and it is what makes a villain
+      a genuine one-file contribution that arms an existing tripwire rather than
+      renegotiating the vocabulary (C6). Growth is designed to happen in the
+      villain layer, not the taxonomy. A ninth tripwire remains possible but only
+      as a deliberate v2 taxonomy revision, never as a side effect of a
+      contribution.
+    resolved_by: "Maintainer · taxonomy owner"
+    resolved_at: "2026-08-22T10:00:00Z"
+
+  # ===================================================================
+  - id: D4
+    title: "Does the report emit a pass/fail fitness verdict, or a score that ranks how well the agent did?"
+    raised_at: "2026-08-21T09:00:00Z"
+    sla_expires_at: "2026-08-23T09:00:00Z"
+    spine_commitment: C3
+    context: >
+      A number is the most-requested feature that we must refuse. Stakeholders
+      will ask for a "safety score," a percentage, or a leaderboard so agents can
+      be compared and progress tracked. But a score implies a rubric of quality
+      we do not have and must not fake, invites gaming, and turns a binary
+      fitness gate into a judgement of how the agent should be built. The Spine
+      refusal is explicit: no scoring/ranking/leaderboard, and "we do not tell you
+      how to build your agent."
+    stakeholders:
+      - "Design (survival report) — the bounded verdict (PASS / FAIL: N sprang) is a fact, not a judgement; a number invites gaming and implies a rubric there isn't one (Design §5)."
+      - "Product / Spine — SCOPE OUT explicitly refuses scoring, ranking, and leaderboards, and refuses LLM-behavior quality judging."
+      - "Maintainer — the CLI already exits 0/1 on 'did any tripwire spring'; that exit code is the machine-honest verdict a CI runner and a human read identically."
+    factors:
+      - "Spine refusal: 'no scoring/ranking/leaderboard' and 'no LLM-behavior eval or quality judging'."
+      - "C3 fitness gate: pass/fail plus a replayable trace, never advice, never a quality score."
+      - "All SPRUNG are equal — no severity weighting, no worst-offender highlight (Design §2, §5)."
+      - "A count of binary failures (N sprang) is a tally, deliberately not a weighted grade."
+    options:
+      - id: D4a
+        summary: "Emit only PASS / FAIL: N tripwire(s) sprang, mirrored by exit code 0/1. No score, no percentage, no grade, no rank."
+        pros:
+          - "A bounded, verifiable fact — asserts only what was tested, in the tripwires' own words."
+          - "Machine-honest: human eye and CI runner read the same verdict (text FAIL / exit 1)."
+          - "No rubric to game; all SPRUNG equal, so no false severity ordering."
+          - "Directly honors the Spine refusal and C3."
+        cons:
+          - "Gives no single headline number for dashboards or comparison across agents — by design."
+      - id: D4b
+        summary: "Emit a numeric safety score / percentage / letter grade, optionally with a leaderboard."
+        pros:
+          - "A single comparable headline number; easy to chart trend over time."
+        cons:
+          - "VIOLATES the Spine refusal: 'no scoring/ranking/leaderboard.' A score implies a quality rubric we explicitly refuse to fake."
+          - "Invites gaming and severity-weighting arguments between sprung tripwires that have no principled ordering."
+          - "Crosses into 'telling you how to build your agent' — the exact judgement the product refuses (C3)."
+    status: resolved_human
+    resolution: >
+      Chose D4a — pass/fail only, mirrored by exit code. D4b is REFUSED because it
+      violates the Spine SCOPE OUT refusal ('no scoring/ranking/leaderboard' and
+      'no LLM-behavior eval or quality judging') and C3's fitness-gate boundary.
+      The verdict is a bounded fact — N binary failures, all equal — not a graded
+      judgement. The exit code makes it a drop-in CI gate with no extra glue. The
+      one cost (no headline comparison number) is the intended consequence of the
+      refusal, not an oversight; the trace, not a score, is what a builder acts on.
+    resolved_by: "Maintainer · product (Spine refusal)"
+    resolved_at: "2026-08-22T09:45:00Z"
+
+  # ===================================================================
+  - id: D5
+    title: "Is a contributed villain auto-discovered from a dropped-in file, or must it be registered in a central manifest?"
+    raised_at: "2026-08-21T09:00:00Z"
+    sla_expires_at: "2026-08-23T09:00:00Z"
+    spine_commitment: C6
+    context: >
+      C6 promises that adding an adversary is a one-file, compute-free
+      contribution with named credit — "the town grows between events." How a new
+      villain becomes live decides whether that promise holds. A central registry
+      or manifest means every contribution touches a shared file: merge
+      conflicts, a review bottleneck, and a second edit beyond the villain itself.
+      Auto-discovery means the file's presence is its registration. Today the trap
+      scripts live in a _SCRIPTS table with build_trap(); the question is whether
+      the contribution surface stays "one file / one table edit, discovered" or
+      hardens into "file plus registry entry."
+    stakeholders:
+      - "Villain-SDK author — the whole pitch of C6 is 'a new villain is one file, discovered not registered, named credit'; a registry adds a second required edit and a shared-file merge point."
+      - "Maintainer — auto-discovery must stay deterministic (stable ordering) so C2's byte-identical trace survives the town growing; discovery order cannot depend on filesystem enumeration order."
+      - "Security-minded reviewer — auto-discovery runs contributed code; discovery must be scoped to a known villains directory and still pass review, not execute arbitrary paths."
+    factors:
+      - "C6: one-file villains, discovered not registered, compute-free, named credit."
+      - "C2 determinism: discovered villains must be ordered deterministically (e.g. by id), never by directory-listing order, so traces stay byte-identical."
+      - "A registry is a shared-file bottleneck: merge conflicts and a second edit per contribution."
+      - "Discovery scope must be a fixed villains/ directory so review stays tractable."
+    options:
+      - id: D5a
+        summary: "Auto-discover villains from a fixed directory; the file's presence registers it. Deterministic ordering by tripwire id + villain id, not by filesystem order. Named credit lives in the file."
+        pros:
+          - "A contribution is genuinely one file — no shared manifest to edit, no merge-conflict bottleneck (honors C6)."
+          - "Credit is carried in the file the contributor wrote; discovery reads it."
+          - "Scoped to a known villains/ directory, so review stays a single-file diff."
+          - "Deterministic id-based ordering preserves the byte-identical trace as the town grows (C2)."
+        cons:
+          - "Auto-loading contributed code demands the discovery scope and ordering be tightly specified so a dropped-in file can't perturb existing traces or run out of scope."
+      - id: D5b
+        summary: "Require each villain to be registered in a central manifest/registry file in addition to its own file."
+        pros:
+          - "The manifest gives one explicit, auditable list of everything that runs."
+        cons:
+          - "A contribution is no longer one file — it drags a manifest edit, contradicting C6's 'discovered not registered, one file'."
+          - "The shared manifest is a merge-conflict and review bottleneck that throttles the between-events growth C6 promises."
+          - "Adds ceremony that makes the compute-free contribution feel like joining a platform."
+    status: resolved_human
+    resolution: >
+      Chose D5a — auto-discovery, file-presence-is-registration. A central
+      registry (D5b) directly contradicts C6's 'discovered, not registered, one
+      file' and reintroduces the shared-file bottleneck the commitment exists to
+      avoid. Auto-discovery is scoped to a fixed villains/ directory (keeping
+      review a single-file diff) and ordered deterministically by tripwire id then
+      villain id — never by filesystem enumeration order — so the byte-identical
+      trace contract (C2) survives the town growing. Named credit is carried in
+      the contributed file itself. This keeps a contribution genuinely one file
+      and compute-free.
+    resolved_by: "Maintainer · villain-SDK owner"
+    resolved_at: "2026-08-22T13:20:00Z"
+
+  # ===================================================================
+  - id: D6
+    title: "How does a live A2A endpoint's free-text response get classified into SPRUNG / HELD without an LLM on the trap side?"
+    raised_at: "2026-08-21T09:00:00Z"
+    sla_expires_at: "2026-08-23T09:00:00Z"
+    spine_commitment: C5
+    context: >
+      Fixture mode returns a decision of record already tagged with a known
+      action name, so tripwire evaluation is exact. A live agent over JSON-RPC
+      message/send returns free text (a2a_response). To render a live SPRUNG or
+      HELD we must map that free text onto a tripwire's safe/unsafe action —
+      without putting an LLM on the trap side, because an LLM classifier would
+      break C2 (same seed → byte-identical trace) and re-introduce per-run cost
+      and flakiness. At the time this decision was raised, the tool honestly
+      reported live tripwires as NOT_ARMED and recorded every raw response to the
+      trace; classification was deferred to a record/replay "cassette" layer.
+      Since then the cassette shipped, closing the question — see resolution.
+    stakeholders:
+      - "Adapter author — HttpA2AClient already records the raw response verbatim; the missing piece is a deterministic mapping from that text to an action name, and the cassette is where recorded interactions get pinned so replay is exact."
+      - "Design (survival report) — the live all-NOT_ARMED state must stay visibly under-armed, never dressed as a PASS; whatever classifier ships must not silently fabricate a verdict from text it can't deterministically map (Design §3.10)."
+      - "Maintainer / C2 owner — the classifier MUST be deterministic and LLM-free on the trap side; a recorded cassette replays byte-identically, but the first-pass recording step and its matching rules are the unsolved design."
+      - "Security-minded reviewer — a live agent could emit adversarial text designed to dodge a matcher; a fail-closed rule (unclassifiable → SPRUNG) is required so evasion can't buy a false HELD."
+    factors:
+      - "C2 is non-negotiable: whatever ships must be deterministic and LLM-free on the trap side, or the byte-identical replay contract breaks."
+      - "Fail-closed is already the rule for unclassified fixture actions (unclassified → SPRUNG); live classification should inherit it so evasion never earns a HELD."
+      - "The honest interim limit (live → NOT_ARMED, raw text recorded) was shippable and truthful, and did not block value while unresolved."
+      - "A record/replay cassette pins a live interaction so re-runs replay byte-identically."
+      - "Options ranged from structured-output contracts the agent opts into, to deterministic pattern matchers over the response, to a record-once/replay cassette that freezes a classification at record time."
+    options:
+      - id: D6a
+        summary: "Record/replay cassette: on first live run, record raw responses; classification into action names is pinned once (deterministic matcher against structured tool calls / structured content), then every replay reads the frozen cassette — byte-identical, LLM-free at replay."
+        pros:
+          - "Replay is deterministic and LLM-free by construction — honors C2 fully once recorded."
+          - "Separates the messy 'first classification' from the reproducible 'replay,' matching how the trace contract already thinks."
+          - "Fail-closed at record time (unmapped/unclassifiable effect → NOT_ARMED, not a fabricated HELD) keeps evasion from buying a false pass."
+        cons:
+          - "Only classifies structured effects (tool calls / structured content); a purely conversational agent stays honestly NOT_ARMED forever, which is a permanent scope limit, not a bug."
+      - id: D6b
+        summary: "Deterministic pattern/keyword matcher over the raw response maps text to a tripwire action; no recording layer, no LLM."
+        pros:
+          - "Fully deterministic and LLM-free with no record step — simplest to reason about for C2."
+          - "Works on the first live run with no human in the loop."
+        cons:
+          - "Brittle against paraphrase and adversarial phrasing; a live agent can dodge or trip a keyword rule."
+          - "Risks silently fabricating a verdict from text it only shallowly understood — the exact overclaim Design §3.10 warns against."
+      - id: D6c
+        summary: "Require the agent under test to return a structured decision (opt-in action-name contract) so live responses classify exactly like fixture ones."
+        pros:
+          - "Exact, deterministic classification with no matcher heuristics — live parity with fixture."
+          - "Cleanly fail-closed on a missing/unknown field."
+        cons:
+          - "Imposes a contract on the agent under test — brushes against 'we do not tell you how to build your agent' (C3) if made mandatory."
+          - "Many live agents won't implement it, leaving them at NOT_ARMED — narrow reach on day one."
+    status: resolved_ai
+    resolution: >
+      RESOLVED as D6a, now shipped code (cassette.py, adapter.py, tripwires.py).
+      The record/replay cassette classifies a live *structured* response (a real
+      tool call, or MCP structured content) into SPRUNG/HELD by feeding it through
+      the exact same per-tripwire spring()/hold predicates the fixture path uses
+      — no LLM anywhere on the trap side, honoring C2's byte-identical replay
+      contract in full once a probe is recorded. D6c's structured-contract idea
+      folded IN as the classification substrate for D6a rather than shipping as a
+      separate mandatory option, so C3's "we do not tell you how to build your
+      agent" is never violated — an agent that never emits a structured effect
+      simply stays NOT_ARMED, honestly, which D6's original framing already
+      anticipated as the correct fail-closed shape (D6a con, now the permanent
+      boundary Design §2/§3.5 formalizes: prose stays NOT_ARMED forever, by
+      commitment, not as a gap still waiting to close). D6b (bare keyword
+      matching over free text) was NOT chosen and remains rejected: it is exactly
+      the "silently fabricate a verdict from shallow text matching" failure mode
+      Design §3.10 warns against, and an adversarial live agent could dodge or
+      trip it at will. Cite C5 (the commitment this decision serves, now upgraded
+      from "captures" to "classifies" in the v0.3 Spine).
+    resolved_by: "Maintainer · C5/adapter owner (cassette shipped in crucible/cassette.py, adapter.py)"
+    resolved_at: "2026-08-22T15:00:00Z"
+
+  # ===================================================================
+  - id: D7
+    title: "How does the gate render a verdict on an agent that is itself stochastic — trust a single trial, or require a sampled floor?"
+    raised_at: "2026-08-22T15:30:00Z"
+    sla_expires_at: "2026-08-24T15:30:00Z"
+    spine_commitment: C7
+    context: >
+      Everything the gauntlet does on the trap side is deterministic (C2), but
+      the agent under test is LLM-backed and therefore is not: the same probe
+      can hold on the builder's desk and leak on the tenth customer, and a
+      single manual try that held proves nothing about the next call. The Spine
+      names this directly ("it refuses the trap when you try it by hand, then
+      leaks on the tenth customer, and you can never reproduce the ghost"). The
+      gate must decide how many samples of the stochastic agent it takes before
+      it will say HELD, and what a mixed outcome across those samples means for
+      the verdict — without turning into the score/percentage the product
+      refuses to emit (C3).
+    stakeholders:
+      - "Maintainer / C7 owner — the verdict must stay the same two-state binary (SPRUNG/HELD) after sampling that it was before; N-trials is a sampling procedure, not a new pill."
+      - "Design (survival report) — the k of N suffix must render in the same dim, unadorned register as every other evidence line, never a percentage, star rating, or severity color scale (Design §7)."
+      - "Builder at a release gate — needs to know 'is this leak rare or constant' to prioritize a fix, without being handed a score of how bad their agent is."
+      - "Product / Spine — SCOPE OUT already refuses scoring/ranking; a naive N-trials design (e.g. 'HELD if it holds in >50% of trials') would smuggle a threshold-tunable score back in through sampling."
+    factors:
+      - "C7 is explicit: SPRUNG if it leaked in ANY trial, HELD only if it held in ALL; prevalence is evidence, never a score."
+      - "C3 still holds absolutely: the pill stays binary regardless of how many trials fed it."
+      - "A 'majority holds' or percentage-threshold rule would reintroduce exactly the rubric C3/SCOPE OUT refuse, just moved into the sampling step instead of the render step."
+      - "The Spine's own worked example already shows the intended shape: 'sprang in 3 of 20 trials' still renders as [SPRUNG], not as a softened partial pass."
+    options:
+      - id: D7a
+        summary: "Fail-closed over N trials: SPRUNG if the tripwire leaked in ANY trial, HELD only if it held in ALL N; per-trap prevalence ('k of N') reported as a plain-text evidence suffix on the row, never as a percentage or score."
+        pros:
+          - "The verdict a builder cannot control which customer becomes trial #1 for — one leak in twenty is exactly as disqualifying as twenty in twenty, which matches the real risk (any customer could be the one who triggers it)."
+          - "Keeps the pill a strict two-state binary; prevalence only ever annotates a verdict already decided, never computes it via a threshold."
+          - "Directly matches the Spine's own worked example and the Problem section's framing of the ghost."
+          - "No tunable threshold (e.g. 'held in ≥90% of trials') for anyone to argue about or game — the rule is categorical, not a knob."
+        cons:
+          - "A single flaky trial (e.g. a transient tool-call formatting slip unrelated to the actual safety property) can SPRUNG a tripwire that is otherwise reliable — there is no 'noise floor' the fail-closed rule tolerates by design."
+      - id: D7b
+        summary: "Threshold rule: HELD if the agent holds in ≥X% of N trials (X configurable), treating a low leak rate as an acceptable pass."
+        pros:
+          - "Tolerant of single-trial noise that isn't a real safety failure."
+        cons:
+          - "Reintroduces a tunable rubric ('how much leaking is acceptable') that is precisely the score/grade the Spine refuses — X becomes a de facto safety score with a pass bar."
+          - "A builder can raise X down until their agent passes, gaming the gate exactly as the D4 refusal anticipated for a numeric score."
+          - "Contradicts the Spine's stated rule for C7 verbatim ('SPRUNG if it leaked in any trial') — not a design choice, a spec violation."
+    status: resolved_ai
+    resolution: >
+      Chose D7a — fail-closed over N trials, prevalence as evidence never a
+      score. This is not a judgment call so much as transcribing what C7
+      already states as a frozen rule: SPRUNG on any leak, HELD only on all N
+      holding, "k of N" rendered as a plain evidence suffix (Design §7) with
+      the same visual weight whether it reads "1 of 20" or "18 of 20" — the
+      design must resist making one look worse than the other, which is the C3
+      refusal extended into a place a naive design would obviously rank. D7b is
+      REFUSED: any percentage-threshold pass bar is a tunable safety score by
+      another name, exactly what SCOPE OUT and C3 already refuse, and it would
+      let a builder game the gate by lowering the bar rather than fixing the
+      agent. Not yet implemented (run.py has no --trials flag) — this decision
+      fixes the shape the eventual runner must match, not the code itself.
+    resolved_by: "AI proposal — transcribes the Spine's own C7 rule; no maintainer override received within the window at time of writing"
+    resolved_at: "2026-08-22T15:45:00Z"
+
+  # ===================================================================
+  - id: D8
+    title: "Does the gauntlet run as a per-commit blocking CI gate, or only at a decision moment (release, model-swap, vetting)?"
+    raised_at: "2026-08-22T15:30:00Z"
+    sla_expires_at: "2026-08-24T15:30:00Z"
+    spine_commitment: C7
+    context: >
+      A per-commit blocking CI check is the default home most safety/quality
+      tooling reaches for, because it is where "nothing ships broken" habits
+      live. But C7 makes the agent under test stochastic, and a stochastic,
+      LLM-backed agent sampled N times per commit is neither deterministic,
+      free, nor fast — the three properties a blocking commit gate requires.
+      The Spine's 0.3 changelog states this as the reason for the pivot: "the
+      agent under test is LLM-backed, so it is stochastic and costs money to
+      run: that rules out the per-commit blocking CI gate and moves Crucible's
+      home to the decision moment."
+    stakeholders:
+      - "Maintainer / CI owner — a blocking commit gate must be fast and free or it gets disabled by the team the first time it slows a merge; N LLM calls per commit is neither."
+      - "Builder shipping frequently — dozens of commits a day cannot each carry N live LLM-agent calls without a real dollar cost per push."
+      - "Product / Spine — the decision-moment framing (release, model-swap regression, third-party vetting, audit) is the explicit v0.3 repositioning; a per-commit default would contradict the Spine's own stated home for the tool."
+    factors:
+      - "The trap side (villains, tripwires) is free and deterministic and COULD run per-commit with zero cost — this decision is specifically about the STOCHASTIC agent side, not the gate mechanism."
+      - "N-trials (D7) multiplies the per-run cost by N live agent calls; per-commit multiplies that again by every commit."
+      - "The decision moments named in the Spine (release, model-swap, third-party vetting, audit) are exactly the moments that are rare enough to absorb N live calls and valuable enough to be worth it."
+      - "Nothing in C7 requires ruling per-commit CI out entirely for a purely fixture/callable-agent run with no live LLM cost — the refusal is specifically about a non-deterministic, paid agent in a blocking path."
+    options:
+      - id: D8a
+        summary: "Decision-moment assurance: the N-trials fail-closed runner is designed for and documented as a pre-release / model-swap / vetting / audit tool, run on demand — not wired as a required, blocking per-commit CI check by default."
+        pros:
+          - "Matches the real cost/determinism shape of an LLM-backed agent: N trials costs real money and real wall-clock time per invocation, which a blocking merge gate cannot absorb on every commit without the team disabling it."
+          - "Matches the Spine's explicit v0.3 repositioning verbatim — this is not a new design choice, it's ratifying the stated pivot."
+          - "The moments named (release, model-swap regression, vetting) are exactly where a builder already stops and wants proof, so the tool's cost lands where its value is highest."
+          - "Nothing prevents a team from wiring `crucible run` into CI themselves on a schedule or a release branch — the product doesn't need to force it as a required per-commit check to be usable that way."
+        cons:
+          - "Without a blocking commit gate, a regression can land and sit unnoticed until the next deliberate decision-moment run, rather than being caught the moment it's introduced."
+      - id: D8b
+        summary: "Per-commit blocking CI gate: every commit runs the N-trials gauntlet against the live agent and blocks the merge on any SPRUNG."
+        pros:
+          - "Catches a regression at the exact commit that introduced it, with no gap between introduction and detection."
+        cons:
+          - "Directly contradicts the Spine 0.3 changelog's stated reason for the pivot: an LLM-backed agent is non-deterministic and costs money, which 'rules out the per-commit blocking CI gate.'"
+          - "N live LLM-agent calls on every commit is a real, recurring dollar cost that scales with commit frequency — the team most likely to disable the check first is the one shipping fastest."
+          - "A flaky, non-deterministic agent blocking merges on any trial in any commit invites exactly the 'the CI check is unreliable, just re-run it' fatigue that erodes trust in the gate faster than it builds it."
+    status: resolved_ai
+    resolution: >
+      Chose D8a — decision-moment, not per-commit. This directly transcribes the
+      Spine 0.3 changelog's own stated reasoning: the agent under test is
+      LLM-backed, therefore stochastic and non-free to run, and those two facts
+      together are precisely what rule out a blocking per-commit CI gate (C7).
+      D8b is not refused on principle the way D4b or D7b are — it isn't a Spine
+      refusal violation — but it is REJECTED on the stated cost/determinism
+      constraint: N-trials-per-commit does not fit a check that must be fast,
+      free, and reliable enough that a team won't disable it. Crucible's home
+      moves to the release gate, the model-swap regression check (C9's bundle
+      diff), and the third-party vetting flow (C10) — moments rare enough to
+      absorb real LLM cost and valuable enough to justify it. Nothing here
+      prevents a team from scheduling `crucible run` in CI on a cadence of their
+      own choosing; the product simply does not ship or document it as a
+      required blocking merge check.
+    resolved_by: "AI proposal — transcribes the Spine 0.3 changelog's own stated reasoning; no maintainer override received within the window at time of writing"
+    resolved_at: "2026-08-22T16:00:00Z"
+
+  # ===================================================================
+  - id: D9
+    title: "Does Crucible ship a hosted service tracking verdict/trend history across runs, so a team can watch its assurance posture over time?"
+    raised_at: "2026-08-22T15:30:00Z"
+    sla_expires_at: "2026-08-24T15:30:00Z"
+    spine_commitment: C9
+    context: >
+      Once bundles exist (C9) and can be diffed pairwise (crucible diff), the
+      natural next request is "just host this for us so we can see the trend
+      line across every run, not just two bundles at a time." That is a
+      reasonable ask from a team that runs Crucible often, but it is also
+      exactly the shape of product the Spine refuses by name: a hosted service
+      as the default, with an account, a dashboard, and Crucible operating
+      infrastructure on the builder's behalf rather than the builder running a
+      local, free tool on their own laptop.
+    stakeholders:
+      - "Product / Spine — SCOPE OUT is explicit and names this exact request: 'No hosted service as the default. Local-first is the product. Any opt-in trend history is future, never the default, and never gates the verdict.'"
+      - "Builder running Crucible repeatedly — genuinely wants to see 'are we getting worse over model swaps,' which a hosted trend view would serve directly; the bundle-diff design (C9, §8) partially answers this two-bundles-at-a-time without a server."
+      - "Maintainer — a hosted service is a categorically different product to build, staff, and secure (accounts, storage, uptime) than a local CLI, and none of that surface currently exists or is committed to."
+      - "Vetter / registry staff (C10) — might want a hosted history of every third-party agent they've vetted, but that shape edges toward 'a registry product of our own,' a second explicit refusal."
+    factors:
+      - "SCOPE OUT refusal, verbatim: 'No hosted service as the default... Any opt-in trend history is future, never the default, and never gates the verdict.'"
+      - "SCOPE OUT refusal, separately: 'No registry / namespace / discovery product of our own' — a hosted vetting-history store edges toward this too."
+      - "C9's bundle + bundle-diff design already gives a local, file-based answer to 'did anything change' without needing a server at all."
+      - "'Never gates the verdict' is the sharper line: even IF an opt-in hosted trend view exists someday, the verdict a single run produces must never depend on or be modified by anything the hosted layer holds."
+    options:
+      - id: D9a
+        summary: "No hosted trend service, now or as a near-term roadmap item. Trend/history questions are answered locally: keep bundles on disk, `crucible diff` any two of them. A future OPT-IN hosted trend view is conceivable but explicitly out of the current commitments (C1-C10) and would need its own Spine bump to enter scope."
+        pros:
+          - "Fully honors the SCOPE OUT refusal as written — no interpretation required, the refusal names this exact request."
+          - "Keeps the product local-first and account-free end to end: bundles are just files, diffable with a local command, no server to trust or secure."
+          - "Avoids sliding toward the separately-refused 'registry product of our own' — a hosted history of vetted third-party agents is a registry in substance even if not in name."
+          - "The bundle-diff design already gives most of the value (regression surfaced between any two points in time) without the infrastructure, staffing, or account surface a hosted service requires."
+        cons:
+          - "A team running Crucible weekly across many model swaps has to manage its own bundle archive and diff pairs by hand rather than seeing an automatic trend line — real, accepted friction, not an oversight."
+      - id: D9b
+        summary: "Build a hosted dashboard that ingests bundles and shows verdict trend history over time, as a v0.3-scope deliverable."
+        pros:
+          - "A trend line across many runs is more legible than manually diffing bundle pairs, especially for a team running Crucible often."
+        cons:
+          - "VIOLATES the SCOPE OUT refusal directly and by name: 'no hosted service as the default... any opt-in trend history is future, never the default.'"
+          - "Not in the C1-C10 commitment list at all — building it now would be scope creep ahead of any Spine bump authorizing it."
+          - "Edges into the separately-refused registry/namespace product, compounding one refusal violation with a second."
+          - "Introduces an account/dashboard surface area (auth, storage, uptime) with no committed reason to build or staff it."
+    status: resolved_ai
+    resolution: >
+      Chose D9a — no hosted trend service. D9b is REFUSED: it violates the
+      SCOPE OUT refusal verbatim ("no hosted service as the default... any
+      opt-in trend history is future, never the default, and never gates the
+      verdict") and is not on the C1-C10 commitment list this Spine authorizes,
+      so building it now would be scope creep, not delivery. The one legitimate
+      need underneath the request — "did anything change across runs" — is
+      already served locally by C9's bundle + bundle-diff design (§8), which
+      needs no server, no account, and no trend store: two files in, a diff
+      out. If a genuinely opt-in, non-gating hosted trend view is ever built, it
+      requires its own Spine bump to enter scope; it is explicitly not implied
+      or pre-approved by C9 shipping.
+    resolved_by: "AI proposal — transcribes the SCOPE OUT refusal verbatim; no maintainer override received within the window at time of writing"
+    resolved_at: "2026-08-22T16:10:00Z"
+
+  # ===================================================================
+  - id: D10
+    title: "What is the default value of N when a builder runs `crucible run --trials N` without specifying a count?"
+    raised_at: "2026-08-22T15:30:00Z"
+    sla_expires_at: "2026-08-24T15:30:00Z"
+    spine_commitment: C7
+    context: >
+      C7 is resolved as a rule (D7: fail-closed, any-leak-SPRUNGs), but the rule
+      needs a concrete default trial count before `run.py`/`cli.py` can ship a
+      `--trials` flag. The number trades off directly against M2 (time-to-first-
+      report under 5 minutes for a tool-calling agent) and real dollar cost per
+      run (N live LLM-agent calls), against the statistical confidence a small N
+      can actually offer for catching a rare ghost. The Spine's own worked
+      example uses N=20 ("sprang in 3 of 20 trials") but that is illustrative
+      prose, not a specified default, and no implementation exists yet to pin it
+      against.
+    stakeholders:
+      - "Maintainer / C7 owner — needs one concrete default shipped in the CLI's argument definition; cannot leave --trials without a default and still call the flag usable."
+      - "Builder at a release gate — wants enough trials to trust a HELD, but not so many that a routine pre-release run costs real money and blows past M2's 5-minute target."
+      - "M2 owner — 'under 5 minutes for a tool-calling agent' is a hard target N must fit under, given each trial is a live network round-trip to a real LLM-backed agent."
+    factors:
+      - "The Spine's illustrative example (N=20) is prose, not a committed default — using it uncritically as the default risks anchoring on a number chosen for readability in a one-line example, not for statistical or cost reasoning."
+      - "A very small N (e.g. 3-5) is cheap and fast but may simply fail to sample a ghost that appears in 1 of 50 real calls, giving false confidence in a HELD."
+      - "A large N (e.g. 50-100) meaningfully raises confidence in a HELD but multiplies real dollar cost and wall-clock time per run, working against M2 and against D8's decision-moment framing (still needs to be affordable even at the decision moment)."
+      - "The default only needs to be good enough to be usable out of the box; a builder who wants more confidence can always raise N explicitly — this decision is about the floor, not a ceiling."
+    options: []
+    status: pending
+    resolution: >
+      PENDING — deliberately left open. This is a narrow implementation
+      parameter under an already-resolved rule (D7), not a principle in
+      tension with any commitment or refusal, so it does not need AI-proposed
+      resolution the way D7-D9 did — it needs a maintainer with a cost/
+      confidence tradeoff in hand once the N-trials runner (I-not-yet-numbered,
+      C7) is actually being built. No option list is proposed yet because the
+      right anchor (a target false-negative rate at an assumed leak
+      probability, converted to a minimum N) has not been worked out; proposing
+      pros/cons on an unanchored number would just be guessing dressed as
+      analysis. Candidates on the table for a maintainer to pick between:
+      a small fixed default (e.g. N=5) optimized for M2's 5-minute budget, the
+      Spine's illustrative N=20, or a cost-aware default that scales with
+      whether the endpoint is a fixture (free, can default high) vs a live
+      paid agent (should default low). Held pending a maintainer decision.
+    resolved_by: null
+    resolved_at: null
+
+  # ===================================================================
+  - id: D11
+    title: "Does per-trap prevalence ('k of N') appear on the SVG badge artifact, or stay confined to the terminal/HTML report and summary JSON?"
+    raised_at: "2026-08-22T15:30:00Z"
+    sla_expires_at: "2026-08-24T15:30:00Z"
+    spine_commitment: C7
+    context: >
+      The badge (report.py, shipped under C3/C8) is a small, embeddable pass/
+      fail artifact — the kind of thing a builder drops into a README or a PR
+      description. It is deliberately terse: today it renders only the binary
+      survived/sprung verdict. Once C7's N-trials prevalence exists, the
+      question is whether that evidence belongs on the badge too (a README
+      badge that says "SPRUNG (3/20)") or whether the badge stays a pure
+      binary and prevalence lives only in the fuller report — because a badge
+      is exactly the kind of compressed, decontextualized surface where "k of
+      N" risks being read as a severity score by anyone who sees it without
+      the surrounding "prevalence is evidence, never a score" framing the full
+      report carries.
+    stakeholders:
+      - "Design (survival report) — has already ruled prevalence must render in the report's dim, unadorned register, never a percentage or severity color (§7); a badge is a much smaller canvas with far less room for that context to survive."
+      - "Maintainer / badge owner — the badge's whole value is being small and embeddable; adding a variable-length 'k of N' string changes its shape and invites a badge-generation service to start color-coding it by ratio, exactly the severity-gradient Design §7 forbids in the full report."
+      - "Builder embedding the badge in a README — wants the badge to be honestly informative, but a bare '(3/20)' with zero surrounding prose is the single most decontextualized place in the whole product for that number to appear."
+      - "Product / Spine — C3's refusal against severity ranking is strictest exactly where context is thinnest; a README badge seen by a stranger with no report attached is the thinnest context in the product."
+    factors:
+      - "Design §7 already treats this as an open resistance point even within the full report ('the design must resist the temptation to make one look worse than the other') — a badge has far less room to resist that temptation than a full row with surrounding text."
+      - "The badge today (shipped) is a clean binary; adding prevalence changes its established shape for every existing consumer of the artifact, not just new ones."
+      - "The summary JSON already carries verdict_strength and could carry prevalence, giving badge-generation tooling a place to pull richer detail from without touching the badge's own minimal shape."
+      - "Nothing in C7 or C8 requires prevalence on the badge specifically — both commitments are satisfied by prevalence appearing in the terminal/HTML report and the summary JSON, which is where the badge's underlying data already lives."
+    options: []
+    status: pending
+    resolution: >
+      PENDING — deliberately left open. Leaning against putting prevalence on
+      the badge itself, precisely because the badge is the most decontextualized
+      surface in the product and the risk of "k of N" being read as a severity
+      score is highest exactly where the surrounding "evidence, never a score"
+      framing (Design §6/§7) is absent. But this is not being resolved outright
+      here because C7's N-trials runner does not exist yet (D10 is also still
+      open), so there is no real badge-rendering code to design against, and
+      because a maintainer may have a concrete counter-design (e.g. a fixed,
+      non-numeric prevalence GLYPH rather than a raw ratio) that would change
+      the tradeoff. Held pending a maintainer decision, to be revisited once
+      D10 (the trial-count default) and the N-trials runner itself land.
+    resolved_by: null
+    resolved_at: null
+
+  # ===================================================================
+  # v0.4 — open-core + suites (C11, C12)
+  # ===================================================================
+
+  - id: D12
+    title: "Is the v0.4 contribution unit pick-and-choose scenario suites, or does the flat one-file villain list stay the only contribution surface?"
+    raised_at: "2026-08-22T16:30:00Z"
+    sla_expires_at: "2026-08-24T16:30:00Z"
+    spine_commitment: C11
+    context: >
+      C6 already made a single villain a one-file, discovered-not-registered
+      contribution (D5). v0.4 asks a layer up: does a contributor also get to
+      bundle villains into a named, real-world-shaped corpus — "payments,"
+      "customer-service," "browsing" — that a builder picks by agent type
+      (`--suites payments,identity`), or does the flat villain list (D3/D5's
+      shipped shape) remain the only unit anyone contributes? And whichever
+      way that lands, a sharper question rides underneath it: when a suite's
+      real-world scenario doesn't cleanly fit one of the frozen eight, does
+      the suite get to define a ninth tripwire to fit it, or does it have to
+      fit the eight or not exist? D3 already froze the taxonomy at eight for
+      v1 villains; this decision is whether suites — a new, coarser unit —
+      get a different answer than villains did, or inherit the same freeze.
+    stakeholders:
+      - "Villain-SDK / suite author — wants a real-world-shaped way to package many villains together so a builder can reason in scenarios ('am I covered for payments?') instead of memorizing which of forty individual files to pick."
+      - "Maintainer / taxonomy owner — already spent D3's reasoning establishing that a frozen eight is what keeps the report shape and cross-run comparability stable; a suite-level exception would quietly undo that without ever revisiting D3 by name."
+      - "Design (survival report) — §9's suite design already assumes suites narrow which *scenarios* run, never the row set; a suite that could introduce a ninth row would break the closed eight-row report §9 was designed against."
+      - "Builder picking suites for their agent type — wants suites to feel like a growth surface (new agent types → new suites, ships between events) without ever needing to learn a new report shape or a new verdict vocabulary when they switch suites."
+    factors:
+      - "C11 states this as a frozen rule, not a design choice up for grabs: 'suites are the growth surface; the eight verdicts are the fixed taxonomy... a new agent type gets new suites, never new verdict types.'"
+      - "C4 (frozen eight) and D3's resolution already establish the taxonomy freeze at the villain level; C11 is that same freeze restated one layer up, at the suite level, so it does not get silently reopened just because the unit got coarser."
+      - "Design §9 (already written, not_started only for code) assumes exactly this shape: 'A contributed suite is still one-file villains underneath (C6), assembled, not a new kind of artifact... Suites grow the scenario surface; they are explicitly barred from growing the verdict surface.'"
+      - "A suite whose scenario doesn't fit the eight is real information — 'this suite exposes a gap in the taxonomy' — but the fix is an explicit, rare v2 Spine decision, never a contribution quietly adding a ninth row."
+    options:
+      - id: D12a
+        summary: "Suites become the contribution unit — a suite bundles one-file villains (C6) into a named, pick-and-choose, real-world-scenario corpus (payments, identity, browsing) — but every scenario in every suite must map onto one of the frozen eight tripwires (C4), and a suite can never define a new verdict type. A scenario that genuinely doesn't fit the eight has no home in a suite; introducing a ninth tripwire stays an explicit, rare v2 taxonomy revision (per D3), never something a suite contribution can do on its own."
+        pros:
+          - "Gives contributors and builders a real-world-shaped unit ('payments') on top of the compute-free one-file villain (C6), which is exactly the pick-and-choose bring-your-own-agent surface the Spine names."
+          - "Inherits D3's already-settled reasoning wholesale instead of relitigating it: the report stays closed over eight rows regardless of which or how many suites exist (Design §9's shipped-ahead-of-code assumption)."
+          - "Keeps a suite a genuinely compute-free assembly of existing one-file villains — no new artifact type, no new report path, no new pill (Design §9 verbatim)."
+          - "A suite that doesn't fit produces real, visible signal (a taxonomy gap) without smuggling a fix into a contribution — the fix stays a deliberate, accountable v2 decision if it ever happens."
+        cons:
+          - "A genuinely novel real-world failure mode that truly doesn't map to any of the eight has no suite home until a v2 taxonomy revision — same accepted cost D3 already priced in at the villain level, now inherited at the suite level."
+      - id: D12b
+        summary: "Keep the flat one-file villain list as the only contribution unit; no suite bundling, no --suites flag, no real-world-scenario packaging."
+        pros:
+          - "Zero new surface to build or review — the shipped D5 discovery mechanism is untouched."
+        cons:
+          - "Gives a builder no way to reason in real-world scenarios ('am I covered for payments?'); they must hand-pick individual villain files, which does not scale as the villain count grows between events."
+          - "Contradicts C11 directly — the Spine names suites as the v0.4 contribution unit, not an optional nice-to-have; refusing suites entirely is not an option this Spine leaves open."
+          - "Design §9 is already written against a `--suites` flag and a `Suites:` report line; staying flat would strand that leaf's design with nothing to implement against."
+      - id: D12c
+        summary: "Let a suite define a new verdict/tripwire type of its own when an existing tripwire doesn't fit its real-world scenario."
+        pros:
+          - "No scenario is ever blocked waiting on a v2 taxonomy decision — a suite author can always ship a complete-feeling suite."
+        cons:
+          - "VIOLATES C11 verbatim: 'a new agent type gets new suites, never new verdict types... never drift.' This is the exact drift C11 exists to forbid."
+          - "Breaks D3's report-shape freeze and Design §9's closed eight-row invariant the moment the first such suite ships — the report would change shape per suite, exactly what D3 refused for villains."
+          - "Turns 'discovered, not registered' (C6) into a stealth taxonomy-amendment path — a contributor could add a verdict type with no v2 review, undermining the frozen taxonomy's entire point (stability and memorizability)."
+    status: resolved_ai
+    resolution: >
+      Chose D12a — suites as the contribution unit, strictly mapped to the
+      frozen eight. This is close to a transcription of C11's own wording
+      rather than a fresh judgment call: the Spine states the rule ("suites
+      are the growth surface; the eight verdicts are the fixed taxonomy")
+      and Design §9 is already written against exactly this shape, ahead of
+      any suite code existing. D12b is REJECTED, not refused on principle,
+      but because C11 names suites as the actual v0.4 commitment — declining
+      to build them at all would leave a Spine commitment unimplemented by
+      choice, not merely unbuilt yet. D12c is REFUSED outright: it is the
+      literal drift C11 names and forbids ("never new verdict types...
+      never drift"), and it would silently undo D3's report-shape freeze the
+      first time it fired. A scenario that doesn't fit the eight is real
+      signal about the taxonomy, but the fix is a deliberate v2 Spine
+      revision — never a side effect of a suite contribution. Cites C4 + C11.
+    resolved_by: "AI proposal — transcribes C11 verbatim, consistent with D3's prior taxonomy-freeze reasoning; no maintainer override received within the window at time of writing"
+    resolved_at: "2026-08-22T16:50:00Z"
+
+  # ===================================================================
+  - id: D13
+    title: "Does Crucible build an optional managed/hosted tier at all, or stay pure-local forever?"
+    raised_at: "2026-08-22T16:35:00Z"
+    sla_expires_at: "2026-08-24T16:35:00Z"
+    spine_commitment: C12
+    context: >
+      D9 (v0.3) already asked something adjacent — "does Crucible ship a
+      hosted service tracking verdict/trend history" — and REFUSED it,
+      because under the v0.3 Spine no commitment authorized a hosted tier at
+      all; building one would have been scope creep against an explicit
+      SCOPE OUT refusal. The v0.4 Spine changes the premise D9 was decided
+      under: C12 now names an OPTIONAL managed tier explicitly, as pure
+      value-add, constrained by three neutrality bright lines. This decision
+      is whether that Spine-level authorization should actually be taken up
+      — build the tier, under the bright lines — or whether Crucible should
+      decline the authorization and stay pure-local forever regardless of
+      what the Spine now permits.
+    stakeholders:
+      - "Maintainer / C12 owner — needs a settled yes/no before any hosted-profile or sync code gets written; building speculative hosted infrastructure against a maybe is wasted motion either direction."
+      - "Builder running Crucible repeatedly (the same stakeholder D9 named) — still genuinely wants 'are we regressing across model swaps over time,' a need the local bundle-diff (C9) only partially answers two-bundles-at-a-time."
+      - "Product / Spine — C12 is a considered, explicit addition to this Spine version, not an oversight; declining to build toward it at all would leave a named commitment permanently unimplemented without cause, the same asymmetry D12b would have created for C11."
+      - "Security- and neutrality-minded reviewer — the exact worry D9 raised (a server deciding, or a de facto registry/ranking) does not disappear just because C12 authorizes a tier; it has to be answered structurally, not waved away by Spine authorization alone."
+    factors:
+      - "C12 states this is now in scope, explicitly and by name, with three bright lines attached as the condition of building it at all — this is not the same open question D9 answered under a Spine that named no such commitment."
+      - "D9's underlying principle — 'never gates the verdict' — is preserved verbatim as bright line 1 (C12), so D9 is not being overturned; the concern it raised is being answered by the new commitment's own structure rather than relitigated."
+      - "Design §10 (already written, not_started for code) designs the report-level neutrality signal a hosted tier would need from day one — the design leaf has already done the work of making the tier's neutrality checkable, not just asserted."
+      - "SCOPE OUT still refuses a hosted service 'as the default' and any hosted registry/ranking of agents; C12's managed tier is optional and analytics-only by construction, so it does not reopen either of those refusals."
+    options:
+      - id: D13a
+        summary: "Build an optional managed tier, gated by the three C12 neutrality bright lines: (1) the verdict is computed only by the OSS and is reproducible offline, so the cloud is auditable against the free core; (2) the verdict and any suite certification are never for sale and never withheld; (3) private failure data is isolated, never cross-leaked, and never turned into a public ranking."
+        pros:
+          - "Takes up the Spine's own explicit v0.4 authorization rather than leaving a named commitment (C12) permanently unimplemented by choice."
+          - "Answers D9's original worry structurally: bright line 1 makes 'does the server decide' a question anyone can check themselves, offline, rather than a promise to trust."
+          - "Serves the genuine, previously-unmet need (regression trend over many runs, not just two bundles at a time) that D9 acknowledged as real friction even while refusing to build toward it."
+          - "Design §10 already specifies exactly what has to render in the free report so the tier's neutrality stays checkable from day one — the hard design work precedes any hosted code, not the other way around."
+        cons:
+          - "A hosted tier is real infrastructure (accounts, storage, uptime) with real security and neutrality surface to get right — it is meaningfully more to build, staff, and keep honest than staying pure-local, and getting a bright line wrong in shipped code is a trust failure, not a cosmetic bug."
+      - id: D13b
+        summary: "Decline the C12 authorization; stay pure-local forever regardless of what the Spine now permits, on the reasoning that D9's refusal should hold even after the Spine changed."
+        pros:
+          - "Zero neutrality surface to get wrong — a product with no server can never leak, gate, or rank anything, by construction."
+        cons:
+          - "Leaves C12 — an explicit, considered v0.4 commitment — permanently unbuilt with no stated cause beyond re-preferring the prior Spine version's scope, which is not this Leaf's authority to override."
+          - "Ignores that C12 was written specifically to answer D9's own worry (the three bright lines are D9's concern, formalized as a structural constraint) — declining to build under those bright lines discards the answer without engaging it."
+          - "Leaves the genuine unmet need (trend across many runs) permanently unaddressed by the same margin D9 already conceded was real friction."
+    status: resolved_ai
+    resolution: >
+      Chose D13a — build the optional managed tier, gated by the three C12
+      bright lines. D9's v0.3 refusal is NOT overturned or contradicted here:
+      D9 refused a hosted service under a Spine that named no commitment
+      authorizing one, and its sharpest concern — "never gates the verdict"
+      — survives verbatim as bright line 1 of C12. What changed is the
+      Spine itself: C12 is a considered v0.4 addition, not a re-ask of D9's
+      question, and it arrives pre-constrained by exactly the structural
+      answer D9's worry deserved (checkable neutrality, never for sale,
+      never a public ranking) rather than a bare "yes, host it." D13b is
+      REJECTED for the same reason D12b was: declining an explicit, named
+      Spine commitment is not this Leaf's call to make once the Spine has
+      settled it. Design §10 already specifies the report-level rendering
+      that keeps the tier auditable from the first run, ahead of any hosted
+      code being written — building under the bright lines is resuming
+      already-designed work, not opening a new risk. Cites C12; supersedes
+      nothing in D9, which stands as the correct answer to the narrower
+      v0.3 question it was actually asked.
+    resolved_by: "AI proposal — transcribes C12's explicit v0.4 authorization and its three bright lines; no maintainer override received within the window at time of writing"
+    resolved_at: "2026-08-22T16:55:00Z"
+
+  # ===================================================================
+  - id: D14
+    title: "What may the managed tier actually charge for — is the verdict or suite certification itself for sale, or only hosting-dependent value-add?"
+    raised_at: "2026-08-22T16:40:00Z"
+    sla_expires_at: "2026-08-24T16:40:00Z"
+    spine_commitment: C12
+    context: >
+      D13 settles that a managed tier gets built at all; this decision settles
+      the single question every "what does the paid tier include" roadmap
+      conversation will eventually ask: does the verdict itself, or a suite's
+      certification, ever sit behind a paywall or a withheld state, or is the
+      managed tier's entire commercial surface confined to things that only
+      exist because hosting exists (history, model-version trend, fleet view,
+      audit/compliance packaging)? Getting this wrong is the single fastest
+      way to breach open-core neutrality — a "verified" or "certified" paid
+      badge that quietly requires the cloud to compute is indistinguishable,
+      to an outside auditor, from a vendor deciding the verdict.
+    stakeholders:
+      - "Maintainer / C12 owner — needs one unambiguous line for every future pricing conversation, so 'can we charge for a certified badge' has a settled answer before a roadmap document ever proposes it."
+      - "Builder at a release gate (free-tier user) — must be able to trust that the verdict they see is the whole verdict, not a preview gated behind an upsell, or the entire fitness-gate premise (C3) collapses into a sales funnel."
+      - "Vetter / procurement (C10) — judging a third-party agent they don't own needs the certification result itself to be unconditionally trustworthy and free to obtain, not something the vetted party could pay to unlock or suppress."
+      - "Product / Spine — bright line 2 of C12 is written in the imperative, not as guidance: 'never for sale and never withheld' — this decision exists to make that operational for a pricing page, not to relitigate it."
+    factors:
+      - "C12 bright line 2, verbatim: 'the verdict and any suite certification are never for sale and never withheld — the free tier always emits the complete verdict + replayable trace + machine-readable summary.'"
+      - "C12 explicitly lists what the managed tier IS value-add for: 'hosted agent profile + longitudinal analytics that require hosting (history, model-version trends, fleet view, audit/compliance packaging).' Everything sellable is on that list; nothing else is."
+      - "Design §10's bright-line-2 render note already states the design consequence: 'there is no upgrade to see the trace truncation anywhere in this report, ever' — the constraint is already assumed settled in the design leaf."
+      - "The distinguishing test is whether the thing being sold could exist without a server at all: history/trend/fleet/audit-packaging cannot (they require storage and aggregation over time); a verdict or a suite certification already fully exists the moment the free OSS run finishes."
+    options:
+      - id: D14a
+        summary: "The managed tier sells only hosting-dependent value: a hosted agent profile, history, model-version trend, fleet view, and audit/compliance packaging. The verdict, the replayable trace, the machine-readable summary, and any suite certification are always free, always emitted in full by the OSS, on every run, synced or not."
+        pros:
+          - "Matches C12 bright line 2 verbatim — nothing to interpret, the Spine already drew this exact line."
+          - "Passes the 'could this exist without a server' test cleanly for every item on both sides of the line — sellable items require hosting by definition; free items are already fully produced by a local run."
+          - "Keeps the vetting use case (C10) trustworthy: a third-party agent's certification result can never be influenced by whether anyone paid, which is the entire point of an external, defensible verdict."
+          - "Matches what Design §10 already assumes — no rework needed on the design leaf to align with this resolution."
+        cons:
+          - "Caps the managed tier's revenue surface to analytics/hosting value only — no 'premium verified' upsell path, which is a real, deliberate business-model constraint, not an oversight."
+      - id: D14b
+        summary: "Allow a paid 'certified' or 'verified' tier where suite certification, or a richer verdict artifact, requires a subscription — free users get a basic pass/fail, paying users get the full trace, bundle, or an official certification stamp."
+        pros:
+          - "A 'certified' badge is an intuitive, easy-to-sell product shape that many audit/compliance products use successfully."
+        cons:
+          - "VIOLATES C12 bright line 2 verbatim: 'never for sale and never withheld... the free tier always emits the complete verdict + replayable trace + machine-readable summary' — this is not a close call, the Spine names exactly this pattern and forbids it."
+          - "Breaks C10's external-vetting use case: a certification an agent's own vendor could purchase to make prettier is worthless to a procurement team trying to judge an agent it does not own and does not trust."
+          - "Contradicts Design §10's already-written render design, which states the absence of any 'upgrade to see the trace' truncation as the artifact itself proving neutrality — this option would falsify that artifact."
+    status: resolved_ai
+    resolution: >
+      Chose D14a — the managed tier's commercial surface is confined to
+      hosting-dependent value (history, model-version trend, fleet view,
+      audit/compliance packaging); the verdict, trace, summary, and any suite
+      certification stay free and complete on every run, forever. D14b is
+      REFUSED: it is the literal violation C12 bright line 2 names by name
+      ("never for sale and never withheld"), it would make C10's external-
+      vetting use case worthless (a purchasable certification is not a
+      certification), and it directly falsifies the render design Design §10
+      already committed to (no trace-truncation-behind-a-paywall anywhere in
+      the report). This decision does not discover a new line — it makes the
+      Spine's existing bright line 2 operational as a pricing-page rule so
+      the question never has to be re-asked when a roadmap document proposes
+      a "verified" upsell later. Cites C12 bright line 2 verbatim.
+    resolved_by: "AI proposal — transcribes C12 bright line 2 verbatim, consistent with Design §10's already-written render constraint; no maintainer override received within the window at time of writing"
+    resolved_at: "2026-08-22T16:58:00Z"
+
+  # ===================================================================
+  - id: D15
+    title: "Who curates the suite index, and what does a suite need to pass before it's listed — is 'certification' of a suite itself a process, and if so, whose?"
+    raised_at: "2026-08-22T16:45:00Z"
+    sla_expires_at: "2026-08-24T16:45:00Z"
+    spine_commitment: C11
+    context: >
+      D12 settles that suites exist and must map to the frozen eight; it does
+      not settle how a contributed suite actually gets onto the curated index
+      C11 describes ("a curated index catalogs suites — an index of attacks,
+      not agents"). The word "curated" implies someone reviews before listing,
+      but no review bar, reviewer identity, or process is defined anywhere yet
+      — not in this Leaf, not in Design §9, not in the shipped code (there is
+      no suite SDK, no --suites flag, no index loader at all). This is
+      distinct from D5's villain-discovery question (a lower-stakes, single-
+      file, auto-discovered unit); a suite is a named, indexed, publicly
+      listed corpus, and "who decides it's good enough to list" is a real
+      process design question with no obvious single right answer yet.
+    stakeholders:
+      - "Maintainer / index owner — will be the de facto reviewer of first suites by default if no other process is named, and needs to know if that's the intended long-term shape or a stopgap."
+      - "Suite contributor — wants to know what bar a suite has to clear (technical correctness only? real-world fidelity? both?) and how long review takes, before investing the effort to bundle several villains into a named suite."
+      - "Builder picking suites off the index — trusts that a listed suite actually maps cleanly to the frozen eight (D12) and genuinely represents the real-world scenario it claims to; an unreviewed index is only as trustworthy as its weakest listed suite."
+      - "Product / Spine — C11 names the index as 'curated' but does not specify by whom or against what bar; this is exactly the kind of open process question a Spine commitment names without fully resolving."
+    factors:
+      - "No suite SDK, index loader, or listing mechanism exists in code yet (Design §9 confirms: 'not_started... no --suites flag, no suite manifest format, no suite discovery/index loader, and no suite SDK')."
+      - "D5's resolution (villain auto-discovery, file-presence-is-registration) is the closest precedent but was explicitly scoped to a single-file villain, not a named, curated, listed suite — the two units may reasonably need different review processes."
+      - "A review bottleneck would work against the same 'grows between events, compute-free' goal C6/C11 both name — but zero review at all risks a mis-mapped suite reaching the index and undermining trust in every other listed suite."
+      - "No maintainer or process owner has yet weighed in on the tradeoff between review rigor and contribution friction for this specific unit, unlike D7-D9's questions where the Spine's own wording already pointed at one answer."
+    options: []
+    status: pending
+    resolution: >
+      PENDING — deliberately left open. Unlike D12-D14, this is not a
+      question the Spine's own wording already answers by strong
+      implication — C11 says the index is "curated" but is silent on the
+      curator and the bar, and no suite code exists yet to design a process
+      against. Proposing a review process now would be inventing organizational
+      process ahead of the SDK it would govern, not resolving a stated
+      tension. Candidates on the table for a maintainer to pick between once
+      the suite SDK (D12a) is actually being built: maintainer-only review
+      (simplest, but a bottleneck as suites multiply, the exact failure mode
+      D5 avoided for villains); an automated conformance check only (does
+      every scenario map to the frozen eight? — mechanical, compute-free, but
+      cannot catch a suite that maps correctly yet misrepresents its
+      real-world scenario); or a two-tier index (auto-listed once the
+      conformance check passes, with a separate "reviewed" tier for
+      maintainer-vetted suites). Held pending a maintainer decision, to be
+      revisited once the suite SDK exists to design the process against.
+    resolved_by: null
+    resolved_at: null
+
+  # ===================================================================
+  - id: D16
+    title: "Where does managed-tier hosted data (agent profiles, history, analytics) live, and under what data-residency / retention terms?"
+    raised_at: "2026-08-22T16:50:00Z"
+    sla_expires_at: "2026-08-24T16:50:00Z"
+    spine_commitment: C12
+    context: >
+      D13 settles that a managed tier gets built; D14 settles what it may
+      sell. Neither settles where the hosted data actually lives once a
+      builder runs `--sync <profile>` (Design §10's design shape) — which
+      jurisdiction, which retention window, whether a builder can request
+      deletion, and whether hosting is single-region or offered with
+      residency choice for regulated customers (a fleet/audit-packaging buyer,
+      per C12, is exactly the kind of customer likely to ask this first).
+      This is a real question with real compliance stakes once any private
+      failure trace leaves a builder's laptop, and nothing in the Spine,
+      Design, or code answers it — C12 authorizes that hosting happens and
+      constrains what it may never do (bright lines), but is silent on where
+      and under what retention terms it happens.
+    stakeholders:
+      - "Fleet / audit-packaging buyer (C12's named use case) — regulated customers evaluating the managed tier will ask about data residency and retention before ever asking about pricing; an unanswered question here blocks exactly the buyer C12 was designed to serve."
+      - "Builder syncing a profile — is trusting the hosted tier with private failure traces (bright line 3: 'isolated, never cross-leaked'); isolation is a promise about cross-tenant leakage, not a statement about which jurisdiction or how long the data is retained."
+      - "Maintainer / infra owner — has not built any hosted infrastructure yet (D13 was just resolved), so no region, storage vendor, or retention policy has been chosen because there is nothing yet to attach one to."
+      - "Product / Spine — C12 deliberately scopes the neutrality bright lines (what the tier may never do to the verdict) without scoping infrastructure operational questions (where it runs, how long it keeps data) — those are correctly a separate, later decision, not an oversight in the Spine."
+    factors:
+      - "C12 authorizes hosting and constrains its behavior toward the verdict (three bright lines) but says nothing about physical/jurisdictional location or retention — this is a genuine gap, not an implicit answer waiting to be read out."
+      - "No hosted infrastructure exists yet (D13 resolved builds it in principle; nothing has been built) — there is no existing deployment to describe or ratify, so any answer today would be speculative rather than descriptive."
+      - "Fleet/audit-compliance packaging (C12's own named value-add) is precisely the product surface a regulated buyer needs residency answers for before adoption — this question sits directly under-served by silence, unlike D15 where a maintainer merely hasn't chosen among reasonable options yet."
+      - "Bright line 3 (isolation, never cross-leaked, never a public ranking) is a promise about tenant boundaries and is already resolved; residency/retention is a distinct, unresolved axis this decision is careful not to conflate with it."
+    options: []
+    status: pending
+    resolution: >
+      PENDING — deliberately left open. This is an infrastructure/compliance
+      operating decision that depends on facts not yet in evidence (which
+      cloud provider or region the hosted tier will actually run in, once it
+      is built at all per D13) — resolving it now would mean inventing an
+      infrastructure commitment ahead of any infrastructure existing, which
+      is a maintainer/infra-owner call, not something this decision queue
+      should pre-empt by guessing. Bright line 3's isolation guarantee (no
+      cross-tenant leakage, no public ranking) is already settled and is NOT
+      what this decision reopens — this decision is narrowly about
+      jurisdiction, retention window, and deletion rights, which are
+      unaddressed by any existing commitment. Held pending a maintainer/infra
+      decision, to be revisited once the managed tier (D13) has an actual
+      hosting plan to attach a residency and retention policy to.
+    resolved_by: null
+    resolved_at: null

@@ -1,0 +1,49 @@
+<title>Crucible</title>
+<style>
+ :root{color-scheme:light dark;--bg:#0e1116;--panel:#161b22;--ink:#e6edf3;--soft:#9aa7b4;--line:#232a33;--accent:#3fb950;--mono:ui-monospace,Menlo,Consolas,monospace}
+ *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,Segoe UI,system-ui,sans-serif;line-height:1.55}
+ main{max-width:44rem;margin:0 auto;padding:4rem 1.25rem 5rem}
+ .hero h1{font-size:2.1rem;margin:.2rem 0 .5rem;text-wrap:balance} .hero p{color:var(--soft);font-size:1.1rem;margin:0 0 1rem}
+ .cmd{font-family:var(--mono);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:.7rem .9rem;font-size:.9rem;overflow-x:auto}
+ .step{display:flex;gap:1rem;border-top:1px solid var(--line);padding:1.6rem 0}
+ .n{font-family:var(--mono);color:var(--accent);font-size:.9rem;padding-top:.3rem}
+ .body h2{font-size:1.15rem;margin:0 0 .3rem} .body p{color:var(--soft);margin:0 0 .5rem}
+ .meta{display:flex;gap:.8rem;align-items:center;flex-wrap:wrap}
+ .meta code{font-family:var(--mono);font-size:.78rem;color:var(--soft);background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:.1rem .4rem}
+ .c{font-family:var(--mono);font-size:.7rem;color:var(--accent);border:1px solid var(--accent);border-radius:999px;padding:.05rem .4rem}
+ footer{margin-top:2rem;color:var(--soft);font-size:.85rem;font-style:italic}
+</style>
+<main>
+ <div class="hero"><h1>Put your agent in the Crucible.<br>See if it survives the storm.</h1>
+ <p>Clone the repo, point it at your agent, and one command tells you whether it survives a floor of deterministic villains — pass/fail with a replayable trace, on your laptop, for free.</p>
+ <div class="cmd">git clone … &amp;&amp; cd agent-crucible<br>crucible run --endpoint https://my-agent.example/a2a</div></div>
+    <section class="step"><div class="n">01</div>
+      <div class="body"><h2>You shipped an agent that can spend your money. You have no way to know if it survives a storm.</h2><p>Conformance kits check that your agent SPEAKS the protocol. Observability tells you what broke AFTER the damage. Nothing sits in the moment BEFORE deploy — where you could learn your agent wires money twice, obeys a stranger, or leaks a key, and fix it for free.
+</p>
+        <div class="meta"><code>hero.headline</code><span class="c">C3</span></div></div></section>
+    <section class="step"><div class="n">02</div>
+      <div class="body"><h2>One command springs deterministic villains at your agent and hands you a survival report.</h2><p>Clone the repo, point it at your endpoint, run one line. No account, no cloud, no platform to join, no compute budget — first report on a laptop in under a minute.
+</p>
+        <div class="meta"><code>terminal.$ crucible run --endpoint https://my-agent.example/a2a</code><span class="c">C1</span></div></div></section>
+    <section class="step"><div class="n">03</div>
+      <div class="body"><h2>The traps are scripted state machines, not an LLM. Same seed, byte-identical trace, every time.</h2><p>The trap side never calls a model, so a run costs nothing and reproduces exactly. When a teammate re-runs your failure, they see precisely what you saw — no flaky verdicts, no bill.
+</p>
+        <div class="meta"><code>report.line: Gauntlet against https://my-agent.example/a2a  seed: 7</code><span class="c">C2</span></div></div></section>
+    <section class="step"><div class="n">04</div>
+      <div class="body"><h2>Eight frozen tripwires. Each one SPRUNG, held, or not-armed — never a rubric, never a score.</h2><p>Money leak, secret disclosure, authority escalation, forged identity, irreversible action, lost instruction, hostile-service capture, silent stall. Binary and observable. A trap that never fired reads &#x27;n/a&#x27;, not a pass — coverage you didn&#x27;t earn is never credited to you.
+</p>
+        <div class="meta"><code>report.body: [ held ] money_leak / [ n/a  ] secret_disclosure / ...</code><span class="c">C4</span></div></div></section>
+    <section class="step"><div class="n">05</div>
+      <div class="body"><h2>A red line is a bug caught in the lab, with a trace you can replay to the exact decision.</h2><p>The gauntlet writes a JSONL trace and exits non-zero the instant anything springs — CI fails, you don&#x27;t. It tells you WHICH decision released payment before delivery, and stops there. No advice, no debugger, no opinion on how you should build your agent.
+</p>
+        <div class="meta"><code>report.line: [SPRUNG] money_leak</code><span class="c">C3</span></div></div></section>
+    <section class="step"><div class="n">06</div>
+      <div class="body"><h2>Reached over real A2A. Fixture mode is your differential control; live mode is your endpoint.</h2><p>The same trap floor that springs against the built-in &#x27;naive&#x27; agent must hold against &#x27;hardened&#x27; — that&#x27;s your green baseline today. Swap the fixture for &#x27;--endpoint&#x27; and the identical villains hit your live agent over JSON-RPC message/send. A2A first, MCP next.
+</p>
+        <div class="meta"><code>terminal.--endpoint URL  vs  --profile naive|hardened</code><span class="c">C5</span></div></div></section>
+    <section class="step"><div class="n">07</div>
+      <div class="body"><h2>Free, local, no account, no score — and a new villain is one file with your name on it.</h2><p>There is no hosted service, no leaderboard, no namespace to claim. Add an adversary by dropping in a single file; it&#x27;s discovered, credited to you, and costs no one compute. The town grows between events — so the gauntlet your agent faces next quarter is meaner than today&#x27;s, for free.
+</p>
+        <div class="meta"><code>repo.villains/ — one file, discovered not registered</code><span class="c">C6</span></div></div></section>
+ <footer>A fitness gate, not a debugger — no advice, no score. Generated from the GTM Leaf (tour.yml).</footer>
+</main>
